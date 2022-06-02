@@ -104,9 +104,14 @@ impl Exchange {
                 .unwrap_or(item_and_bid.1.bid)
                 - item_and_bid.1.bid; // if user won in auction and loosed in another auction than we have to return money that he spent in the second auction
 
-            self.users_bids.insert(&item_and_bid.1.account_id, &rest_money);
+            self.users_bids
+                .insert(&item_and_bid.1.account_id, &rest_money);
 
-            log!("user {} has to receive {} tokens", &item_and_bid.1.account_id, &rest_money);
+            log!(
+                "user {} has to receive {} tokens",
+                &item_and_bid.1.account_id,
+                &rest_money
+            );
         }
 
         for winner in winners.iter() {
@@ -257,6 +262,20 @@ impl Exchange {
         );
     }
 
+    pub fn get_items(&self) -> Vec<String> {
+        self.winners_items
+            .get(&env::predecessor_account_id())
+            .unwrap_or(Vector::new(b"b"))
+            .to_vec()
+    }
+
+    #[result_serializer(borsh)]
+    pub fn get_all_items_vec(&self) -> Vector<String> {
+        self.winners_items
+            .get(&env::predecessor_account_id())
+            .unwrap_or(Vector::new(b"b"))
+    }
+
     pub fn clear_data(&mut self) {
         self.suppliers.clear();
         self.buyers.clear();
@@ -281,7 +300,7 @@ impl Exchange {
         str
     }
 
-    pub fn get_items(&self) -> String {
+    pub fn get_all_items(&self) -> String {
         let mut str = "".to_string();
         for i in self.winners_items.iter() {
             str = format!("{}\naccountID: {} -> Bid: {:?}", str, i.0, i.1);
