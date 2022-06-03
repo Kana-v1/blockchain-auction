@@ -1,10 +1,14 @@
-mod buyer;
-mod supplier;
+pub mod buyer;
+pub mod supplier;
+
+use std::collections::HashMap;
+
+use uuid::Uuid;
 
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{LookupMap, UnorderedMap, Vector};
-use near_sdk::{env, log, PanicOnDefault};
-use near_sdk::{near_bindgen, AccountId, EpochHeight, Promise};
+use near_sdk::{env, env::log_str, EpochHeight, PanicOnDefault};
+use near_sdk::{near_bindgen, AccountId, Promise};
 
 use crate::buyer::{Buyer, ItemHash, ItemState};
 use crate::supplier::Supplier;
@@ -14,7 +18,7 @@ type Item = String;
 type Money = u128;
 
 #[near_bindgen]
-#[derive(BorshDeserialize, BorshSerialize, Debug)]
+#[derive(BorshDeserialize, BorshSerialize, Debug, Clone)]
 pub struct Bid {
     pub account_id: AccountId,
     pub bid: Money,
@@ -62,10 +66,10 @@ impl Exchange {
         let state_1: Old = env::state_read().expect("can not read old state while migrating");
 
         Self {
-            suppliers: UnorderedMap::new(b"s"),
-            buyers: UnorderedMap::new(b"b"),
-            items_and_bids: UnorderedMap::new(b"i"),
-            users_bids: UnorderedMap::new(b"u"),
+            suppliers: UnorderedMap::new(b"suppliers".to_vec()),
+            buyers: UnorderedMap::new(b"buyers".to_vec()),
+            items_and_bids: UnorderedMap::new(b"items_and_bids".to_vec()),
+            users_bids: UnorderedMap::new(b"users_bids".to_vec()),
             winners_items: state_1.winners_items,
             auction_is_open: state_1.auction_is_open,
         }
@@ -74,11 +78,11 @@ impl Exchange {
     #[init]
     pub fn new() -> Self {
         Self {
-            suppliers: UnorderedMap::new(b"s"),
-            buyers: UnorderedMap::new(b"b"),
-            items_and_bids: UnorderedMap::new(b"i"),
-            users_bids: UnorderedMap::new(b"u"),
-            winners_items: UnorderedMap::new(b"w"),
+            suppliers: UnorderedMap::new(b"suppliers".to_vec()),
+            buyers: UnorderedMap::new(b"buyers".to_vec()),
+            items_and_bids: UnorderedMap::new(b"items_and_bids".to_vec()),
+            users_bids: UnorderedMap::new(b"users_bids".to_vec()),
+            winners_items: UnorderedMap::new(b"winners_items".to_vec()),
             auction_is_open: true,
         }
     }
@@ -93,25 +97,19 @@ impl Exchange {
 
         self.auction_is_open = false;
 
-        let mut winners: UnorderedMap<ItemHash, Bid> = UnorderedMap::new(b"m");
+        let mut winners = HashMap::<ItemHash, Bid>::new();
 
         for item_and_bid in self.items_and_bids.iter() {
-            winners.insert(&item_and_bid.0, &item_and_bid.1);
+            winners.insert(item_and_bid.0.clone(), item_and_bid.1.clone());
 
             let rest_money = self
                 .users_bids
                 .get(&item_and_bid.1.account_id)
                 .unwrap_or(item_and_bid.1.bid)
-                - item_and_bid.1.bid; // if user won in auction and loosed in another auction than we have to return money that he spent in the second auction
+                - item_and_bid.1.bid; // if user won in an auction and loosed in another auction then we have to return money that he spent in the second auction
 
             self.users_bids
                 .insert(&item_and_bid.1.account_id, &rest_money);
-
-            log!(
-                "user {} has to receive {} tokens",
-                &item_and_bid.1.account_id,
-                &rest_money
-            );
         }
 
         for winner in winners.iter() {
@@ -128,8 +126,6 @@ impl Exchange {
     pub fn add_item_to_auction(&mut self, item: &Item, min_bid: &u128) {
         assert!(self.auction_is_open, "Auction is closed. Try again later");
 
-        log!("Want to add item {:?} with min price {}", item, min_bid);
-
         match self.suppliers.get(&env::predecessor_account_id()) {
             Some(mut supplier) => supplier.add_item_to_auction(&item, &min_bid),
             None => {
@@ -139,8 +135,6 @@ impl Exchange {
                     .insert(&env::predecessor_account_id(), &supplier);
             }
         }
-
-        log!("Item {:?} with min price {} has been added", item, min_bid);
     }
 
     #[payable]
@@ -219,12 +213,19 @@ impl Exchange {
             match supplier.1.sell_item(&item) {
                 Some(selled_item) => {
                     match self.winners_items.get(&winner) {
-                        Some(mut items) => items.push(&selled_item.itself),
+                        Some(mut items) => {
+                            items.push(&selled_item.itself);
+                            self.winners_items.insert(&winner, &items);
+                            env::log_str("insert item into something");
+                        }
+
                         None => {
-                            let mut v: Vector<Item> = Vector::new(b"m");
+                            let mut v: Vector<Item> = Vector::new(generate_collection_id());
                             v.push(&selled_item.itself);
 
                             self.winners_items.insert(&winner, &v);
+
+                            env::log_str("insert item into empty");
                         }
                     }
 
@@ -235,15 +236,6 @@ impl Exchange {
                             .bid,
                     );
 
-                    log!(
-                        "supplier {} has to receive {} tokens",
-                        supplier.0,
-                        self.items_and_bids
-                            .get(&item)
-                            .unwrap_or(Bid::new(&env::predecessor_account_id(), &0))
-                            .bid
-                    );
-
                     return;
                 }
 
@@ -251,7 +243,7 @@ impl Exchange {
             };
         }
 
-        // if we got here than suppliers don't contain item
+        // if we got here then suppliers don't contain item
         self.return_money(
             &winner,
             &self
@@ -265,7 +257,7 @@ impl Exchange {
     pub fn get_items(&self) -> Vec<String> {
         self.winners_items
             .get(&env::predecessor_account_id())
-            .unwrap_or(Vector::new(b"b"))
+            .unwrap_or(Vector::new(generate_collection_id()))
             .to_vec()
     }
 
@@ -273,7 +265,7 @@ impl Exchange {
     pub fn get_all_items_vec(&self) -> Vector<String> {
         self.winners_items
             .get(&env::predecessor_account_id())
-            .unwrap_or(Vector::new(b"b"))
+            .unwrap_or(Vector::new(generate_collection_id()))
     }
 
     pub fn clear_data(&mut self) {
@@ -312,6 +304,10 @@ impl Exchange {
     pub fn add_test_item(&mut self) {
         self.add_item_to_auction(&String::from("test_item"), &0)
     }
+}
+
+fn generate_collection_id() -> Vec<u8> {
+    Uuid::new_v4().to_urn().to_string().as_bytes().to_vec()
 }
 
 // TODO: write integration tests and debug 'produce_auction'

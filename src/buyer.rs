@@ -32,6 +32,7 @@ impl Buyer {
     }
 }
 
+#[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub enum ItemState {
     MadeBet,
