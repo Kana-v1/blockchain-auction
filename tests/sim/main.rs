@@ -609,8 +609,6 @@ async fn test_auction_with_two_items() {
         winner_items.len()
     );
 
-
-
     let seller_acc_1 = seller_1.view_account(&worker).await.unwrap();
     let seller_acc_2 = seller_2.view_account(&worker).await.unwrap();
     let loser_acc = loser.view_account(&worker).await.unwrap();
@@ -635,5 +633,125 @@ async fn test_auction_with_two_items() {
         "Seller has invalid amount of money. Should be 30 N, actual: {}",
         yocto_to_token(loser_acc.balance).ceil(),
     );
+}
 
+#[tokio::test]
+#[should_panic]
+async fn bid_less_than_min_bid() {
+    let worker = workspaces::sandbox().await.unwrap();
+    let wasm = std::fs::read(WASM_FILEPATH).unwrap();
+    let contract = worker.dev_deploy(&wasm).await.unwrap();
+
+    let owner = worker.root_account();
+
+    owner
+        .call(&worker, contract.id(), "new")
+        .transact()
+        .await
+        .unwrap();
+
+    owner
+        .call(&worker, contract.id(), "start_new_auction")
+        .transact()
+        .await
+        .unwrap();
+
+    let bidder = owner
+        .create_subaccount(&worker, WINNER_ACC_ID)
+        .initial_balance(parse_near!("20 N"))
+        .transact()
+        .await
+        .unwrap()
+        .unwrap();
+
+    let seller = owner
+        .create_subaccount(&worker, SELLER_ACC_ID)
+        .initial_balance(parse_near!("30 N"))
+        .transact()
+        .await
+        .unwrap()
+        .unwrap();
+
+    let args_for_sell: Value = from_str(
+        r#"
+    {
+        "item":"test_item",
+        "min_bid": 2
+    }"#,
+    )
+    .unwrap();
+
+    let args_for_bid: Value = from_str(
+        r#"{
+            "item_hash":"68E5EE009D13B901BBB36D3BB47FC59ACA581D6DB141DA0574287495244A9225"
+    }
+        "#,
+    )
+    .unwrap();
+
+    seller
+        .call(&worker, contract.id(), "add_item_to_auction")
+        .args_json(args_for_sell.clone())
+        .unwrap()
+        .transact()
+        .await
+        .unwrap();
+
+    bidder
+        .call(&worker, contract.id(), "make_bid")
+        .args_json(args_for_bid)
+        .unwrap()
+        .deposit(1u128)
+        .transact()
+        .await
+        .unwrap();
+}
+
+
+
+#[tokio::test]
+#[should_panic]
+async fn bid_to_non_exists_item() {
+    let worker = workspaces::sandbox().await.unwrap();
+    let wasm = std::fs::read(WASM_FILEPATH).unwrap();
+    let contract = worker.dev_deploy(&wasm).await.unwrap();
+
+    let owner = worker.root_account();
+
+    owner
+        .call(&worker, contract.id(), "new")
+        .transact()
+        .await
+        .unwrap();
+
+    owner
+        .call(&worker, contract.id(), "start_new_auction")
+        .transact()
+        .await
+        .unwrap();
+
+    let bidder = owner
+        .create_subaccount(&worker, WINNER_ACC_ID)
+        .initial_balance(parse_near!("20 N"))
+        .transact()
+        .await
+        .unwrap()
+        .unwrap();
+
+    let args_for_bid: Value = from_str(
+        r#"{
+            "item_hash":"68E5EE009D13B901BBB36D3BB47FC59ACA581D6DB141DA0574287495244A9225"
+    }
+        "#,
+    )
+    .unwrap();
+
+    bidder
+        .call(&worker, contract.id(), "make_bid")
+        .args_json(args_for_bid)
+        .unwrap()
+        .deposit(1u128)
+        .transact()
+        .await
+        .unwrap();
 }

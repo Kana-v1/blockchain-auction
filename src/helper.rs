@@ -3,6 +3,7 @@ use near_sdk::{
     near_bindgen,
 };
 
+/// Helper that separates non-main contract actions
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Helper {
@@ -14,6 +15,7 @@ impl Helper {
         Self { next_id_length: 0 }
     }
 
+    /// generates unique ids for near collections 
     pub fn generate_collection_id(&mut self) -> Vec<u8> {
         let symbols = vec![
             "a", "b", "c", "d", "e", "f", "g", "h", "q", "w", "}", "r", "t", "y", "u", "i", "p",

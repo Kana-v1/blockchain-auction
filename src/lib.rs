@@ -15,6 +15,7 @@ type Item = String;
 type Money = u128;
 type ItemHash = String;
 
+/// Representation of a user's bid that contains information about account id and amount of bid
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, Debug, Clone)]
 pub struct Bid {
@@ -31,6 +32,7 @@ impl Bid {
     }
 }
 
+/// contract for performing auction between suppliers and buyers
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct Exchange {
@@ -39,7 +41,7 @@ pub struct Exchange {
     pub users_bids: UnorderedMap<AccountId, Money>, // whole sum of all bids for each user (e.g. user wants to buy item_1 and item_2. He bids item_1 = 1 token, item_2 = 1 token. Sum will be 2 tokens)
     pub winners_items: UnorderedMap<AccountId, Vector<Item>>, // each item winner
 
-    auction_is_open: bool,
+    auction_is_open: bool, // does suppliers can add new items or buyers can add new bids for the current auction
     helper: Helper,
 }
 
@@ -57,11 +59,17 @@ impl Exchange {
         }
     }
 
+    /// make a signal that buyers can make bids and suppliers can add items
+    /// 
+    /// # Panics
+    /// 
+    ///  * if an auction has not been opened yet
     pub fn start_new_auction(&mut self) {
         assert!(!self.auction_is_open, "Auction is already opened");
         self.auction_is_open = true;
     }
 
+    /// return all items that caller won
     #[result_serializer(borsh)]
     pub fn get_items(&mut self) -> Vector<String> {
         self.winners_items
@@ -69,12 +77,26 @@ impl Exchange {
             .unwrap_or(Vector::new(self.helper.generate_collection_id()))
     }
 
+    /// clear all data except won items after an auction has been finished
     pub fn clear_data(&mut self) {
         self.suppliers.clear();
         self.items_and_bids.clear();
         self.users_bids.clear();
     }
 
+    /// make bid for item
+    /// 
+    /// # Arguments
+    /// 
+    /// * `item_hash` - hash calculated from an item through the SHA256 algorithm
+    /// 
+    /// # Panics
+    /// 
+    ///  * auction must be started
+    ///  * supplier can not make bid for his own item
+    ///  * attached deposit must be more than item's minimal bid
+    ///  * item must exists
+    ///  * bid has to be bigger than previous
     #[payable]
     pub fn make_bid(&mut self, item_hash: &ItemHash) {
         assert!(self.auction_is_open, "Auction is closed. Try again later");
@@ -83,6 +105,28 @@ impl Exchange {
             !self.does_supplier_make_bid_for_his_item(&item_hash),
             "Supplier can not make bid for his items"
         );
+
+        let mut item_exists = false;
+
+        for mut supplier in self.suppliers.values() {
+            let (can_bid, min_bid) = supplier.bid_can_be_done(&item_hash, &env::attached_deposit());
+            if !can_bid {
+                panic!(
+                    "This item has {} minimum bid. Actual: {}",
+                    min_bid,
+                    env::attached_deposit()
+                )
+            }
+
+            if min_bid >= supplier::DEFAULT_MIN_BID {
+                item_exists = true;
+                break;
+            }
+        }
+        
+        if !item_exists {
+            panic!("item with hash {} does not exist", item_hash);
+        }
 
         if let Some(exists_bid) = self.items_and_bids.get(&item_hash) {
             assert!(
@@ -105,6 +149,16 @@ impl Exchange {
         self.users_bids.insert(&env::predecessor_account_id(), &bid);
     }
 
+    /// return money to the user
+    /// 
+    /// # Arguments
+    /// 
+    /// * `account_id` - user's account id 
+    /// * `amount` - amount of money that has to be returned
+    /// 
+    /// # Panics
+    /// 
+    /// * user must have bids with equal or more amount of money that wants to return
     fn return_money(&mut self, account_id: &AccountId, amount: &u128) {
         assert!(
             self.users_bids.get(&account_id).is_some(),
@@ -122,6 +176,11 @@ impl Exchange {
         Promise::new(account_id.clone()).transfer(*amount);
     }
 
+    /// execute an auction process
+    /// 
+    /// # Panics
+    /// 
+    /// * auction must not be finished 
     pub fn produce_auction(&mut self) {
         assert!(self.auction_is_open, "Auction has already been finished");
 
@@ -153,20 +212,34 @@ impl Exchange {
         self.clear_data();
     }
 
+    /// add item to an auction as a supplier
+    /// 
+    /// # Arguments
+    /// 
+    /// * `item` - representation of an item
+    /// * `min_bid` - minimal bid for this item. Will be replaced to 1 if 0
+    /// 
+    /// # Panics
+    ///  * auction must be opened 
     pub fn add_item_to_auction(&mut self, item: &Item, min_bid: &u128) {
         assert!(self.auction_is_open, "Auction is closed. Try again later");
 
         match self.suppliers.get(&env::predecessor_account_id()) {
-            Some(mut supplier) => supplier.add_item_to_auction(&item, &min_bid),
+            Some(mut supplier) => supplier.add_item_to_auction(&item, min_bid),
             None => {
                 let mut supplier = Supplier::new(&mut self.helper);
-                supplier.add_item_to_auction(&item, &min_bid);
+                supplier.add_item_to_auction(&item, min_bid);
                 self.suppliers
                     .insert(&env::predecessor_account_id(), &supplier);
             }
         }
     }
 
+    /// produce exchange. send money to a supplier and item to a buyer
+    /// 
+    /// # Arguments
+    /// * `winner` - account id that won this item
+    /// * `item` - hash calculated from an item through the SHA256 algorithm
     fn produce_exchange(&mut self, winner: &AccountId, item: &ItemHash) {
         for mut supplier in self.suppliers.iter() {
             match supplier.1.sell_item(&item) {
@@ -211,6 +284,10 @@ impl Exchange {
         );
     }
 
+    /// chech if supplier make item for his own bid
+    /// 
+    /// # Arguments
+    /// * `item_hash` - hash calculated from an item through the SHA256 algorithm
     fn does_supplier_make_bid_for_his_item(&self, item_hash: &ItemHash) -> bool {
         match self.suppliers.get(&env::predecessor_account_id()) {
             None => false,
@@ -277,25 +354,6 @@ mod tests {
         assert_eq!(exchange.users_bids.len(), 0);
 
         assert_eq!(exchange.winners_items.len(), 1);
-    }
-
-    #[test]
-    fn test_make_bid() {
-        let mut exchange = Exchange::new();
-        exchange.start_new_auction();
-
-        let hash = "hash".to_string();
-
-        exchange.make_bid(&hash);
-
-        assert!(
-            exchange.items_and_bids.get(&hash).is_some(),
-            "item does not have new bid"
-        );
-        assert!(
-            exchange.users_bids.get(&get_acc_id()).is_some(),
-            "user does not have new bid"
-        );
     }
 
     #[test]
