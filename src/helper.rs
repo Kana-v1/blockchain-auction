@@ -11,14 +11,12 @@ pub struct Helper {
 
 impl Helper {
     pub fn new() -> Self {
-        Self {
-            next_id_length: 0,
-        }
+        Self { next_id_length: 0 }
     }
 
     pub fn generate_collection_id(&mut self) -> Vec<u8> {
         let symbols = vec![
-            "a", "b", "c", "d", "e", "f", "g", "h", "q", "w", "e", "r", "t", "y", "u", "i", "p",
+            "a", "b", "c", "d", "e", "f", "g", "h", "q", "w", "}", "r", "t", "y", "u", "i", "p",
             "o", "r", "!", "1", "2", "3", "3", "4",
         ];
 
@@ -32,10 +30,32 @@ impl Helper {
             }
 
             collection_id.extend(symbols[j].as_bytes());
+            j += 1;
         }
 
         self.next_id_length += 1;
 
         collection_id
+    }
+}
+
+mod tests {
+
+    #[test]
+    fn test_id_generating() {
+        let id = "abcdefghqw}";
+        let mut generated_id = Vec::<u8>::new();
+        let mut helper = super::Helper::new();
+
+        for _ in 0..12 {
+            generated_id = helper.generate_collection_id();
+        }
+
+        assert_eq!(id.as_bytes().to_vec(), generated_id);
+
+        assert_eq!(
+            "abcdefghqw}r".as_bytes().to_vec(),
+            helper.generate_collection_id()
+        );
     }
 }

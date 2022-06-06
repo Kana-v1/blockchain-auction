@@ -200,7 +200,7 @@ impl Exchange {
             };
         }
 
-        // if we got here then suppliers don't contain item
+        // suppliers don't contain item if we got here
         self.return_money(
             &winner,
             &self
@@ -219,25 +219,132 @@ impl Exchange {
     }
 
     // FOR TEST PURPOSES
-
-    pub fn get_bids(&self) -> String {
-        let mut str = "".to_string();
-        for i in self.items_and_bids.iter() {
-            str = format!("{}\nhash: {} -> bid: {:?}", str, i.0, i.1);
-        }
-        str
-    }
-
-    pub fn get_all_items(&self) -> String {
-        let mut str = "".to_string();
-        for i in self.winners_items.iter() {
-            str = format!("{}\naccountID: {} -> Bid: {:?}", str, i.0, i.1);
-        }
-
-        str
-    }
-
     pub fn add_test_item(&mut self) {
         self.add_item_to_auction(&String::from("test_item"), &0)
+    }
+}
+
+#[allow(unused_imports)]
+#[allow(dead_code)]
+mod tests {
+    use super::*;
+
+    fn get_acc_id() -> AccountId {
+        AccountId::try_from("bob.near".to_string()).unwrap()
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_start_started_auction() {
+        let mut exchange = Exchange::new();
+        exchange.start_new_auction();
+        exchange.start_new_auction();
+    }
+
+    #[test]
+    fn test_get_items() {
+        let mut exchange = Exchange::new();
+
+        let item = "test_item".to_string();
+        let mut items = Vector::<String>::new(b"i");
+        items.push(&item);
+
+        exchange.winners_items.insert(&get_acc_id(), &items);
+
+        assert_eq!(exchange.get_items().len(), 1, "invalid amount of items")
+    }
+
+    #[test]
+    fn test_clear_data() {
+        let mut exchange = Exchange::new();
+
+        let mut items = Vector::<String>::new(b"i");
+        items.push(&"item".to_string());
+
+        exchange
+            .suppliers
+            .insert(&&get_acc_id(), &Supplier::new(&mut Helper::new()));
+        exchange
+            .items_and_bids
+            .insert(&"test_key".to_string(), &Bid::new(&get_acc_id(), &10u128));
+        exchange.users_bids.insert(&get_acc_id(), &10u128);
+        exchange.winners_items.insert(&get_acc_id(), &items);
+
+        exchange.clear_data();
+
+        assert_eq!(exchange.suppliers.len(), 0);
+        assert_eq!(exchange.items_and_bids.len(), 0);
+        assert_eq!(exchange.users_bids.len(), 0);
+
+        assert_eq!(exchange.winners_items.len(), 1);
+    }
+
+    #[test]
+    fn test_make_bid() {
+        let mut exchange = Exchange::new();
+        exchange.start_new_auction();
+
+        let hash = "hash".to_string();
+
+        exchange.make_bid(&hash);
+
+        assert!(
+            exchange.items_and_bids.get(&hash).is_some(),
+            "item does not have new bid"
+        );
+        assert!(
+            exchange.users_bids.get(&get_acc_id()).is_some(),
+            "user does not have new bid"
+        );
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_make_same_bids() {
+        let mut exchange = Exchange::new();
+        exchange.start_new_auction();
+
+        let hash = "hash".to_string();
+
+        exchange.make_bid(&hash);
+        exchange.make_bid(&hash);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_add_tem_to_closed_auction() {
+        let mut exchange = Exchange::new();
+        exchange.add_item_to_auction(&"test_item".to_string(), &10u128);
+    }
+
+    #[test]
+    fn test_add_item_to_auction() {
+        let mut exchange = Exchange::new();
+        exchange.start_new_auction();
+
+        exchange.add_item_to_auction(&"test_item".to_string(), &10u128);
+
+        assert_eq!(
+            exchange.suppliers.len(),
+            1,
+            "invalid number of suppliers. Expected 1, actual: {}",
+            exchange.suppliers.len()
+        );
+    }
+
+    #[test]
+    fn test_supplier_can_not_bid_for_his_items() {
+        let mut exchange = Exchange::new();
+        exchange.start_new_auction();
+
+        let (_, item_hash) = supplier::Item::new(&"test_item".to_string(), &12u128);
+
+        exchange.add_item_to_auction(&"test_item".to_string(), &10u128);
+
+        assert_eq!(
+            exchange.does_supplier_make_bid_for_his_item(&item_hash),
+            true,
+            "supplier is able to bid for his item"
+        );
     }
 }
