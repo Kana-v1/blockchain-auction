@@ -1,17 +1,18 @@
 pub mod buyer;
+mod helper;
 pub mod supplier;
 
 use std::collections::HashMap;
 
+use helper::Helper;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::{UnorderedMap, Vector, LookupMap};
-use near_sdk::{env, PanicOnDefault, EpochHeight};
+use near_sdk::collections::{LookupMap, UnorderedMap, Vector};
+use near_sdk::{env, EpochHeight, PanicOnDefault};
 use near_sdk::{near_bindgen, AccountId, Promise};
 
-use crate::buyer::{Buyer, ItemHash, ItemState};
+use crate::buyer::{Buyer, ItemHash};
 use crate::supplier::Supplier;
 
-// type Item = Vector<u8>;
 type Item = String;
 type Money = u128;
 
@@ -41,7 +42,7 @@ pub struct Exchange {
     pub winners_items: UnorderedMap<AccountId, Vector<Item>>, // each item winner
 
     auction_is_open: bool,
-    collection_id_index: u64,
+    helper: Helper,
 }
 
 #[near_bindgen]
@@ -71,7 +72,7 @@ impl Exchange {
             users_bids: UnorderedMap::new(b"users_bids".to_vec()),
             winners_items: state_1.winners_items,
             auction_is_open: state_1.auction_is_open,
-            collection_id_index: 1,
+            helper: Helper::new(),
         }
     }
 
@@ -83,8 +84,8 @@ impl Exchange {
             items_and_bids: UnorderedMap::new(b"items_and_bids".to_vec()),
             users_bids: UnorderedMap::new(b"users_bids".to_vec()),
             winners_items: UnorderedMap::new(b"winners_items".to_vec()),
-            auction_is_open: true,
-            collection_id_index: 1,
+            auction_is_open: false,
+            helper: Helper::new(),
         }
     }
 
@@ -97,7 +98,7 @@ impl Exchange {
     pub fn get_items(&mut self) -> Vector<String> {
         self.winners_items
             .get(&env::predecessor_account_id())
-            .unwrap_or(Vector::new(self.generate_collection_id()))
+            .unwrap_or(Vector::new(self.helper.generate_collection_id()))
     }
 
     pub fn clear_data(&mut self) {
@@ -134,9 +135,7 @@ impl Exchange {
                 .get(&env::predecessor_account_id())
                 .unwrap_or(Buyer::new());
 
-            buyer
-                .interested_in_items
-                .insert(&item_hash, &ItemState::MadeBet);
+            buyer.make_bet(&item_hash);
 
             exchange
                 .buyers
@@ -215,7 +214,7 @@ impl Exchange {
         match self.suppliers.get(&env::predecessor_account_id()) {
             Some(mut supplier) => supplier.add_item_to_auction(&item, &min_bid),
             None => {
-                let mut supplier = Supplier::new();
+                let mut supplier = Supplier::new(&mut self.helper);
                 supplier.add_item_to_auction(&item, &min_bid);
                 self.suppliers
                     .insert(&env::predecessor_account_id(), &supplier);
@@ -234,7 +233,7 @@ impl Exchange {
                         }
 
                         None => {
-                            let mut v: Vector<Item> = Vector::new(self.generate_collection_id());
+                            let mut v: Vector<Item> = Vector::new(self.helper.generate_collection_id());
                             v.push(&selled_item.itself);
 
                             self.winners_items.insert(&winner, &v);
@@ -271,29 +270,6 @@ impl Exchange {
             None => false,
             Some(supplier) => supplier.contains_item(&item_hash),
         }
-    }
-
-    fn generate_collection_id(&mut self) -> Vec<u8> {
-        let symbols = vec![
-            "a", "b", "c", "d", "e", "f", "g", "h", "q", "w", "e", "r", "t", "y", "u", "i", "p",
-            "o", "r", "!", "1", "2", "3", "3", "4",
-        ];
-
-        let mut collection_id = Vec::<u8>::new();
-
-        let mut j = 0usize;
-
-        for i in 0..self.collection_id_index {
-            if i as usize / symbols.len() >= 1 {
-                j = 0
-            }
-
-            collection_id.extend(symbols[j].as_bytes());
-        }
-
-        self.collection_id_index += 1;
-
-        collection_id
     }
 
     // FOR TEST PURPOSES

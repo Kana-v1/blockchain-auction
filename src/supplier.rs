@@ -2,6 +2,8 @@ use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::{collections::LookupMap, env, near_bindgen, AccountId};
 use sha2::{Digest, Sha256};
 
+use crate::helper::Helper;
+
 pub type ItemHash = String;
 
 #[near_bindgen]
@@ -31,10 +33,10 @@ pub struct Supplier {
 }
 
 impl Supplier {
-    pub fn new() -> Self {
+    pub fn new(helper: &mut Helper) -> Self {
         Self {
             id: env::predecessor_account_id(),
-            items: LookupMap::new(b"s"),
+            items: LookupMap::new(helper.generate_collection_id()),
         }
     }
 
