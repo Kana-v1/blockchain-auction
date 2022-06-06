@@ -1,4 +1,3 @@
-pub mod buyer;
 mod helper;
 pub mod supplier;
 
@@ -6,15 +5,15 @@ use std::collections::HashMap;
 
 use helper::Helper;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::{LookupMap, UnorderedMap, Vector};
-use near_sdk::{env, EpochHeight, PanicOnDefault};
+use near_sdk::collections::{UnorderedMap, Vector};
+use near_sdk::{env, PanicOnDefault};
 use near_sdk::{near_bindgen, AccountId, Promise};
 
-use crate::buyer::{Buyer, ItemHash};
 use crate::supplier::Supplier;
 
 type Item = String;
 type Money = u128;
+type ItemHash = String;
 
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, Debug, Clone)]
@@ -36,7 +35,6 @@ impl Bid {
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
 pub struct Exchange {
     pub suppliers: UnorderedMap<AccountId, Supplier>, // who want to sell item
-    pub buyers: UnorderedMap<AccountId, Buyer>,       // who want to buy item
     pub items_and_bids: UnorderedMap<ItemHash, Bid>,  // current bid for each item
     pub users_bids: UnorderedMap<AccountId, Money>, // whole sum of all bids for each user (e.g. user wants to buy item_1 and item_2. He bids item_1 = 1 token, item_2 = 1 token. Sum will be 2 tokens)
     pub winners_items: UnorderedMap<AccountId, Vector<Item>>, // each item winner
@@ -47,40 +45,10 @@ pub struct Exchange {
 
 #[near_bindgen]
 impl Exchange {
-    #[init(ignore_state)]
-    #[private]
-    pub fn migrate() -> Self {
-        #[derive(BorshDeserialize)]
-        #[allow(dead_code)]
-        struct Old {
-            pub suppliers: UnorderedMap<AccountId, Supplier>,
-            pub buyers: UnorderedMap<AccountId, Buyer>,
-            pub items_and_bids: UnorderedMap<ItemHash, Bid>,
-            pub users_bids: LookupMap<AccountId, Money>,
-            pub winners_items: UnorderedMap<AccountId, Vector<Item>>,
-
-            start_epoch_start: EpochHeight,
-            auction_is_open: bool,
-        }
-
-        let state_1: Old = env::state_read().expect("can not read old state while migrating");
-
-        Self {
-            suppliers: UnorderedMap::new(b"suppliers".to_vec()),
-            buyers: UnorderedMap::new(b"buyers".to_vec()),
-            items_and_bids: UnorderedMap::new(b"items_and_bids".to_vec()),
-            users_bids: UnorderedMap::new(b"users_bids".to_vec()),
-            winners_items: state_1.winners_items,
-            auction_is_open: state_1.auction_is_open,
-            helper: Helper::new(),
-        }
-    }
-
     #[init]
     pub fn new() -> Self {
         Self {
             suppliers: UnorderedMap::new(b"suppliers".to_vec()),
-            buyers: UnorderedMap::new(b"buyers".to_vec()),
             items_and_bids: UnorderedMap::new(b"items_and_bids".to_vec()),
             users_bids: UnorderedMap::new(b"users_bids".to_vec()),
             winners_items: UnorderedMap::new(b"winners_items".to_vec()),
@@ -103,7 +71,6 @@ impl Exchange {
 
     pub fn clear_data(&mut self) {
         self.suppliers.clear();
-        self.buyers.clear();
         self.items_and_bids.clear();
         self.users_bids.clear();
     }
@@ -128,28 +95,6 @@ impl Exchange {
             &item_hash,
             &Bid::new(&env::predecessor_account_id(), &env::attached_deposit()),
         );
-
-        let add_item_to_user = |exchange: &mut Exchange| {
-            let mut buyer = exchange
-                .buyers
-                .get(&env::predecessor_account_id())
-                .unwrap_or(Buyer::new());
-
-            buyer.make_bet(&item_hash);
-
-            exchange
-                .buyers
-                .insert(&env::predecessor_account_id(), &buyer);
-        };
-
-        match self.buyers.get(&env::predecessor_account_id()) {
-            Some(buyer) => {
-                if !buyer.interested_in_items.contains_key(&item_hash) {
-                    add_item_to_user(self);
-                }
-            }
-            None => add_item_to_user(self),
-        }
 
         let bid = self
             .users_bids
@@ -233,7 +178,8 @@ impl Exchange {
                         }
 
                         None => {
-                            let mut v: Vector<Item> = Vector::new(self.helper.generate_collection_id());
+                            let mut v: Vector<Item> =
+                                Vector::new(self.helper.generate_collection_id());
                             v.push(&selled_item.itself);
 
                             self.winners_items.insert(&winner, &v);
