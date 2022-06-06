@@ -3,11 +3,9 @@ pub mod supplier;
 
 use std::collections::HashMap;
 
-use uuid::Uuid;
-
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::{LookupMap, UnorderedMap, Vector};
-use near_sdk::{env, env::log_str, EpochHeight, PanicOnDefault};
+use near_sdk::collections::{UnorderedMap, Vector, LookupMap};
+use near_sdk::{env, PanicOnDefault, EpochHeight};
 use near_sdk::{near_bindgen, AccountId, Promise};
 
 use crate::buyer::{Buyer, ItemHash, ItemState};
@@ -43,6 +41,7 @@ pub struct Exchange {
     pub winners_items: UnorderedMap<AccountId, Vector<Item>>, // each item winner
 
     auction_is_open: bool,
+    collection_id_index: u64,
 }
 
 #[near_bindgen]
@@ -72,6 +71,7 @@ impl Exchange {
             users_bids: UnorderedMap::new(b"users_bids".to_vec()),
             winners_items: state_1.winners_items,
             auction_is_open: state_1.auction_is_open,
+            collection_id_index: 1,
         }
     }
 
@@ -84,6 +84,7 @@ impl Exchange {
             users_bids: UnorderedMap::new(b"users_bids".to_vec()),
             winners_items: UnorderedMap::new(b"winners_items".to_vec()),
             auction_is_open: true,
+            collection_id_index: 1,
         }
     }
 
@@ -92,49 +93,18 @@ impl Exchange {
         self.auction_is_open = true;
     }
 
-    pub fn produce_auction(&mut self) {
-        assert!(self.auction_is_open, "Auction has already been finished");
-
-        self.auction_is_open = false;
-
-        let mut winners = HashMap::<ItemHash, Bid>::new();
-
-        for item_and_bid in self.items_and_bids.iter() {
-            winners.insert(item_and_bid.0.clone(), item_and_bid.1.clone());
-
-            let rest_money = self
-                .users_bids
-                .get(&item_and_bid.1.account_id)
-                .unwrap_or(item_and_bid.1.bid)
-                - item_and_bid.1.bid; // if user won in an auction and loosed in another auction then we have to return money that he spent in the second auction
-
-            self.users_bids
-                .insert(&item_and_bid.1.account_id, &rest_money);
-        }
-
-        for winner in winners.iter() {
-            self.produce_exchange(&winner.1.account_id, &winner.0);
-        }
-
-        for user_bid in self.users_bids.iter() {
-            Promise::new(user_bid.0.clone()).transfer(user_bid.1.clone());
-        }
-
-        self.clear_data();
+    #[result_serializer(borsh)]
+    pub fn get_items(&mut self) -> Vector<String> {
+        self.winners_items
+            .get(&env::predecessor_account_id())
+            .unwrap_or(Vector::new(self.generate_collection_id()))
     }
 
-    pub fn add_item_to_auction(&mut self, item: &Item, min_bid: &u128) {
-        assert!(self.auction_is_open, "Auction is closed. Try again later");
-
-        match self.suppliers.get(&env::predecessor_account_id()) {
-            Some(mut supplier) => supplier.add_item_to_auction(&item, &min_bid),
-            None => {
-                let mut supplier = Supplier::new();
-                supplier.add_item_to_auction(&item, &min_bid);
-                self.suppliers
-                    .insert(&env::predecessor_account_id(), &supplier);
-            }
-        }
+    pub fn clear_data(&mut self) {
+        self.suppliers.clear();
+        self.buyers.clear();
+        self.items_and_bids.clear();
+        self.users_bids.clear();
     }
 
     #[payable]
@@ -208,6 +178,51 @@ impl Exchange {
         Promise::new(account_id.clone()).transfer(*amount);
     }
 
+    pub fn produce_auction(&mut self) {
+        assert!(self.auction_is_open, "Auction has already been finished");
+
+        self.auction_is_open = false;
+
+        let mut winners = HashMap::<ItemHash, Bid>::new();
+
+        for item_and_bid in self.items_and_bids.iter() {
+            winners.insert(item_and_bid.0.clone(), item_and_bid.1.clone());
+
+            let rest_money = self
+                .users_bids
+                .get(&item_and_bid.1.account_id)
+                .unwrap_or(item_and_bid.1.bid)
+                - item_and_bid.1.bid; // if user won in an auction and loosed in another auction then we have to return money that he spent in the second auction
+
+            self.users_bids
+                .insert(&item_and_bid.1.account_id, &rest_money);
+        }
+
+        for winner in winners.iter() {
+            self.produce_exchange(&winner.1.account_id, &winner.0);
+        }
+
+        for user_bid in self.users_bids.iter() {
+            Promise::new(user_bid.0.clone()).transfer(user_bid.1.clone());
+        }
+
+        self.clear_data();
+    }
+
+    pub fn add_item_to_auction(&mut self, item: &Item, min_bid: &u128) {
+        assert!(self.auction_is_open, "Auction is closed. Try again later");
+
+        match self.suppliers.get(&env::predecessor_account_id()) {
+            Some(mut supplier) => supplier.add_item_to_auction(&item, &min_bid),
+            None => {
+                let mut supplier = Supplier::new();
+                supplier.add_item_to_auction(&item, &min_bid);
+                self.suppliers
+                    .insert(&env::predecessor_account_id(), &supplier);
+            }
+        }
+    }
+
     fn produce_exchange(&mut self, winner: &AccountId, item: &ItemHash) {
         for mut supplier in self.suppliers.iter() {
             match supplier.1.sell_item(&item) {
@@ -216,16 +231,13 @@ impl Exchange {
                         Some(mut items) => {
                             items.push(&selled_item.itself);
                             self.winners_items.insert(&winner, &items);
-                            env::log_str("insert item into something");
                         }
 
                         None => {
-                            let mut v: Vector<Item> = Vector::new(generate_collection_id());
+                            let mut v: Vector<Item> = Vector::new(self.generate_collection_id());
                             v.push(&selled_item.itself);
 
                             self.winners_items.insert(&winner, &v);
-
-                            env::log_str("insert item into empty");
                         }
                     }
 
@@ -254,32 +266,34 @@ impl Exchange {
         );
     }
 
-    pub fn get_items(&self) -> Vec<String> {
-        self.winners_items
-            .get(&env::predecessor_account_id())
-            .unwrap_or(Vector::new(generate_collection_id()))
-            .to_vec()
-    }
-
-    #[result_serializer(borsh)]
-    pub fn get_all_items_vec(&self) -> Vector<String> {
-        self.winners_items
-            .get(&env::predecessor_account_id())
-            .unwrap_or(Vector::new(generate_collection_id()))
-    }
-
-    pub fn clear_data(&mut self) {
-        self.suppliers.clear();
-        self.buyers.clear();
-        self.items_and_bids.clear();
-        self.users_bids.clear();
-    }
-
     fn does_supplier_make_bid_for_his_item(&self, item_hash: &ItemHash) -> bool {
         match self.suppliers.get(&env::predecessor_account_id()) {
             None => false,
             Some(supplier) => supplier.contains_item(&item_hash),
         }
+    }
+
+    fn generate_collection_id(&mut self) -> Vec<u8> {
+        let symbols = vec![
+            "a", "b", "c", "d", "e", "f", "g", "h", "q", "w", "e", "r", "t", "y", "u", "i", "p",
+            "o", "r", "!", "1", "2", "3", "3", "4",
+        ];
+
+        let mut collection_id = Vec::<u8>::new();
+
+        let mut j = 0usize;
+
+        for i in 0..self.collection_id_index {
+            if i as usize / symbols.len() >= 1 {
+                j = 0
+            }
+
+            collection_id.extend(symbols[j].as_bytes());
+        }
+
+        self.collection_id_index += 1;
+
+        collection_id
     }
 
     // FOR TEST PURPOSES
@@ -305,9 +319,3 @@ impl Exchange {
         self.add_item_to_auction(&String::from("test_item"), &0)
     }
 }
-
-fn generate_collection_id() -> Vec<u8> {
-    Uuid::new_v4().to_urn().to_string().as_bytes().to_vec()
-}
-
-// TODO: write integration tests and debug 'produce_auction'

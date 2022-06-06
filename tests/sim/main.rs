@@ -94,7 +94,7 @@ async fn test_single_participant() {
         .unwrap();
 
     let winner_items: Vector<String> = winner
-        .call(&worker, contract.id(), "get_all_items_vec")
+        .call(&worker, contract.id(), "get_items")
         .transact()
         .await
         .unwrap()
@@ -210,7 +210,7 @@ async fn test_multiple_participants() {
         .unwrap();
 
     let winner_items: Vector<String> = winner
-        .call(&worker, contract.id(), "get_all_items_vec")
+        .call(&worker, contract.id(), "get_items")
         .transact()
         .await
         .unwrap()
@@ -248,7 +248,7 @@ async fn test() {
     let mut io = UnorderedMap::<i32, i32>::new(b"m");
     io.insert(&2, &3);
     io.insert(&1, &3);
-    println!("{}",io.get(&1).unwrap());
+    println!("{}", io.get(&1).unwrap());
 
     println!("{:?}", io);
 }
@@ -319,7 +319,6 @@ async fn two_auctions_in_sequence() {
         "#,
     )
     .unwrap();
-  
 
     loser
         .call(&worker, contract.id(), "make_bid")
@@ -337,7 +336,7 @@ async fn two_auctions_in_sequence() {
         .deposit(parse_near!("10 N"))
         .transact()
         .await
-        .unwrap();  
+        .unwrap();
 
     owner
         .call(&worker, contract.id(), "produce_auction")
@@ -346,7 +345,7 @@ async fn two_auctions_in_sequence() {
         .unwrap();
 
     let winner_items: Vector<String> = winner
-        .call(&worker, contract.id(), "get_all_items_vec")
+        .call(&worker, contract.id(), "get_items")
         .transact()
         .await
         .unwrap()
@@ -370,14 +369,13 @@ async fn two_auctions_in_sequence() {
         seller_acc.balance
     );
 
-
     assert_eq!(
         yocto_to_token(loser_acc.balance).ceil(),
         20f64,
         "Seller has invalid amount of money. Should be 20 N, actual: {}",
         loser_acc.balance
     );
-      /* #endregion*/
+    /* #endregion*/
 
     owner
         .call(&worker, contract.id(), "start_new_auction")
@@ -411,17 +409,14 @@ async fn two_auctions_in_sequence() {
         .await
         .unwrap();
 
-
-    let logs = owner
+    owner
         .call(&worker, contract.id(), "produce_auction")
         .transact()
         .await
-        .unwrap()
-        .logs();
-        
+        .unwrap();
 
     let winner_items: Vector<String> = winner
-        .call(&worker, contract.id(), "get_all_items_vec")
+        .call(&worker, contract.id(), "get_items")
         .transact()
         .await
         .unwrap()
@@ -439,15 +434,15 @@ async fn two_auctions_in_sequence() {
 
     assert_eq!(
         yocto_to_token(seller_acc.balance).ceil(),
-        40f64,
-        "Seller has invalid amount of money. Should be 40 N, actual: {}",
-        seller_acc.balance
+        35f64,
+        "Seller has invalid amount of money. Should be 35 N, actual: {}",
+        yocto_to_token(seller_acc.balance).ceil()
     );
 
     assert_eq!(
         yocto_to_token(loser_acc.balance).ceil(),
         20f64,
-        "Seller has invalid amount of money. Should be 20 N, actual: {}",
-        loser_acc.balance
+        "Loser has invalid amount of money. Should be 20 N, actual: {}",
+        yocto_to_token(loser_acc.balance).ceil()
     );
 }

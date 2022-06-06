@@ -1,5 +1,4 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::log;
 use near_sdk::{collections::LookupMap, env, near_bindgen, AccountId};
 use sha2::{Digest, Sha256};
 
@@ -41,7 +40,6 @@ impl Supplier {
 
     pub fn add_item_to_auction(&mut self, item: &String, min_price: &u128) {
         let converted_item = Item::new(item, min_price);
-        log!("item with hash {} has been inserted", converted_item.1);
         self.items.insert(&converted_item.1, &converted_item.0);
     }
 

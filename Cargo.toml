@@ -10,8 +10,6 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 near-sdk = "4.0.0-pre.4"
 sha2 = "0.10.2"
-uuid = { version = "0.8.2", features = ["v4","serde"] }
-
 
 [dev-dependencies]
 workspaces = "0.3.0"
