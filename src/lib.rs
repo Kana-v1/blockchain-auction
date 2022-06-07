@@ -35,7 +35,7 @@ impl Bid {
 /// contract for performing auction between suppliers and buyers
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, PanicOnDefault)]
-pub struct Exchange {
+pub struct Auction {
     pub suppliers: UnorderedMap<AccountId, Supplier>, // who want to sell item
     pub items_and_bids: UnorderedMap<ItemHash, Bid>,  // current bid for each item
     pub users_bids: UnorderedMap<AccountId, Money>, // whole sum of all bids for each user (e.g. user wants to buy item_1 and item_2. He bids item_1 = 1 token, item_2 = 1 token. Sum will be 2 tokens)
@@ -46,7 +46,7 @@ pub struct Exchange {
 }
 
 #[near_bindgen]
-impl Exchange {
+impl Auction {
     #[init]
     pub fn new() -> Self {
         Self {
@@ -60,9 +60,9 @@ impl Exchange {
     }
 
     /// make a signal that buyers can make bids and suppliers can add items
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     ///  * if an auction has not been opened yet
     pub fn start_new_auction(&mut self) {
         assert!(!self.auction_is_open, "Auction is already opened");
@@ -85,13 +85,13 @@ impl Exchange {
     }
 
     /// make bid for item
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `item_hash` - hash calculated from an item through the SHA256 algorithm
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     ///  * auction must be started
     ///  * supplier can not make bid for his own item
     ///  * attached deposit must be more than item's minimal bid
@@ -123,7 +123,7 @@ impl Exchange {
                 break;
             }
         }
-        
+
         if !item_exists {
             panic!("item with hash {} does not exist", item_hash);
         }
@@ -150,14 +150,14 @@ impl Exchange {
     }
 
     /// return money to the user
-    /// 
+    ///
     /// # Arguments
-    /// 
-    /// * `account_id` - user's account id 
+    ///
+    /// * `account_id` - user's account id
     /// * `amount` - amount of money that has to be returned
-    /// 
+    ///
     /// # Panics
-    /// 
+    ///
     /// * user must have bids with equal or more amount of money that wants to return
     fn return_money(&mut self, account_id: &AccountId, amount: &u128) {
         assert!(
@@ -177,16 +177,18 @@ impl Exchange {
     }
 
     /// execute an auction process
-    /// 
+    ///
     /// # Panics
-    /// 
-    /// * auction must not be finished 
+    ///
+    /// * auction must not be finished
     pub fn produce_auction(&mut self) {
         assert!(self.auction_is_open, "Auction has already been finished");
 
         self.auction_is_open = false;
 
         let mut winners = HashMap::<ItemHash, Bid>::new();
+
+        /* #region pick winners and recalculate their sum of bids */
 
         for item_and_bid in self.items_and_bids.iter() {
             winners.insert(item_and_bid.0.clone(), item_and_bid.1.clone());
@@ -201,6 +203,8 @@ impl Exchange {
                 .insert(&item_and_bid.1.account_id, &rest_money);
         }
 
+        /* #endregion pick winners and recalculate their sum of bids */
+
         for winner in winners.iter() {
             self.produce_exchange(&winner.1.account_id, &winner.0);
         }
@@ -213,14 +217,14 @@ impl Exchange {
     }
 
     /// add item to an auction as a supplier
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `item` - representation of an item
     /// * `min_bid` - minimal bid for this item. Will be replaced to 1 if 0
-    /// 
+    ///
     /// # Panics
-    ///  * auction must be opened 
+    ///  * auction must be opened
     pub fn add_item_to_auction(&mut self, item: &Item, min_bid: &u128) {
         assert!(self.auction_is_open, "Auction is closed. Try again later");
 
@@ -236,29 +240,34 @@ impl Exchange {
     }
 
     /// produce exchange. send money to a supplier and item to a buyer
-    /// 
+    ///
     /// # Arguments
     /// * `winner` - account id that won this item
     /// * `item` - hash calculated from an item through the SHA256 algorithm
     fn produce_exchange(&mut self, winner: &AccountId, item: &ItemHash) {
         for mut supplier in self.suppliers.iter() {
             match supplier.1.sell_item(&item) {
-                Some(selled_item) => {
+                Some(sold_item) => {
+
+                    /* #region add won item to a winner */
                     match self.winners_items.get(&winner) {
                         Some(mut items) => {
-                            items.push(&selled_item.itself);
+                            items.push(&sold_item.itself);
                             self.winners_items.insert(&winner, &items);
                         }
 
                         None => {
                             let mut v: Vector<Item> =
                                 Vector::new(self.helper.generate_collection_id());
-                            v.push(&selled_item.itself);
+                            v.push(&sold_item.itself);
 
                             self.winners_items.insert(&winner, &v);
                         }
                     }
+                    /* #endregion add won item to a winner */
 
+
+                    // send money to a supplier for the sold item
                     Promise::new(supplier.0.clone()).transfer(
                         self.items_and_bids
                             .get(&item)
@@ -285,7 +294,7 @@ impl Exchange {
     }
 
     /// chech if supplier make item for his own bid
-    /// 
+    ///
     /// # Arguments
     /// * `item_hash` - hash calculated from an item through the SHA256 algorithm
     fn does_supplier_make_bid_for_his_item(&self, item_hash: &ItemHash) -> bool {
@@ -313,14 +322,14 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_start_started_auction() {
-        let mut exchange = Exchange::new();
+        let mut exchange = Auction::new();
         exchange.start_new_auction();
         exchange.start_new_auction();
     }
 
     #[test]
     fn test_get_items() {
-        let mut exchange = Exchange::new();
+        let mut exchange = Auction::new();
 
         let item = "test_item".to_string();
         let mut items = Vector::<String>::new(b"i");
@@ -333,7 +342,7 @@ mod tests {
 
     #[test]
     fn test_clear_data() {
-        let mut exchange = Exchange::new();
+        let mut exchange = Auction::new();
 
         let mut items = Vector::<String>::new(b"i");
         items.push(&"item".to_string());
@@ -359,7 +368,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_make_same_bids() {
-        let mut exchange = Exchange::new();
+        let mut exchange = Auction::new();
         exchange.start_new_auction();
 
         let hash = "hash".to_string();
@@ -371,13 +380,13 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_add_tem_to_closed_auction() {
-        let mut exchange = Exchange::new();
+        let mut exchange = Auction::new();
         exchange.add_item_to_auction(&"test_item".to_string(), &10u128);
     }
 
     #[test]
     fn test_add_item_to_auction() {
-        let mut exchange = Exchange::new();
+        let mut exchange = Auction::new();
         exchange.start_new_auction();
 
         exchange.add_item_to_auction(&"test_item".to_string(), &10u128);
@@ -392,7 +401,7 @@ mod tests {
 
     #[test]
     fn test_supplier_can_not_bid_for_his_items() {
-        let mut exchange = Exchange::new();
+        let mut exchange = Auction::new();
         exchange.start_new_auction();
 
         let (_, item_hash) = supplier::Item::new(&"test_item".to_string(), &12u128);
