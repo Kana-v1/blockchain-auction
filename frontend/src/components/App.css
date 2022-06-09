@@ -1,38 +1,108 @@
-.App {
-  text-align: center;
-}
-
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
+#app {
+  height: 100%;
   min-height: 100vh;
+}
+
+.App {
+  width: 100vw;
+  height: 100vh;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+.sidebar,
+.smallSidebar {
+  height: 100%;
+  width: 15%;
+  background-color: #2F4050;
+}
+
+.smallSidebar {
+  width: 5%;
+}
+
+.sidebarList {
+  height: auto;
+  padding: 0;
+  width: 100%;
+}
+
+.sidebarList .row,
+.menuRow {
+  width: 100%;
+  height: 60px;
+  list-style-type: none;
+  margin: 0;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
+  flex-direction: row;
   color: white;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
 }
 
-.App-link {
-  color: #61dafb;
+.sidebarList .cutMenu {
+  width: 100%;
+  height: 60px;
+  list-style-type: none;
+  margin: 0;
+  display: flex;
+  flex-direction: row;
+  color: white;
+  padding-left: 10%;
+  align-items: center;
+  font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.sidebarList .menuRow:hover, .cutMenu:hover {
+  cursor: pointer;
+}
+
+
+.sidebarList .row:hover {
+  cursor: pointer;
+  background-color: #293846;
+}
+
+.sidebarList #active {
+  background-color: #293846;
+}
+
+.line {
+  width: 3px;
+  height: 100%;
+  background-color: rgb(25, 211, 149);
+  visibility: hidden;
+}
+
+.sidebarList #active .line {
+  visibility: visible;
+}
+
+.row #icon {
+  flex: 30%;
+  display: grid;
+  place-items: center;
+}
+
+.row #title {
+  flex: 70%;
+}
+
+
+
+#account-arrow,
+#account-arrow-active {
+  margin-left: -25px;
+  margin-right: 15px;
+  width: 20px;
+  height: 20px;
+}
+
+#account-arrow-active {
+  transform: rotate(90deg);
 }
