@@ -1,0 +1,19 @@
+.items {
+    max-width: 50%;
+    height: auto;
+    overflow-y:scroll;
+}
+
+
+.border {
+	font-size: 1.6rem;
+	display: grid;
+	place-items: center;
+	height: 100%;
+	border: 5px solid;
+	padding: 1rem;
+}
+
+.sides {
+    border-image: linear-gradient(to right, rgb(25, 211, 149), rgb(240, 237, 103)) 0 0 0 1;
+}
