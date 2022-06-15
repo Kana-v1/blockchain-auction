@@ -1,8 +1,8 @@
 import React from 'react'
 import SellIcon from '@mui/icons-material/Sell';
 import DataArrayIcon from '@mui/icons-material/DataArray';
-// import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 
 export const SidebarData = [
     {
@@ -16,6 +16,10 @@ export const SidebarData = [
     {
         title: 'Items',
         icon: <DataArrayIcon />,
+    },
+    {
+        title: 'AdminPanel',
+        icon: <AdminPanelSettingsIcon />,
     }
 ]
 
