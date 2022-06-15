@@ -1,7 +1,7 @@
 import React from 'react'
 import './Auctions.css'
 import UpdateIcon from '@mui/icons-material/Update';
-import {getLots} from '../../contract/utils'
+import { getLots } from '../../contract/utils'
 
 
 
@@ -13,9 +13,9 @@ function Auctions() {
 
     return (
         <div style={{ width: '100%', height: '100%' }}>
-                        <div style= {{color: updateColor, position: 'absolute', left: '70px', zIndex: '1', cursor: 'pointer'}} onClick = {() => {
+            <div style={{ color: updateColor, position: 'absolute', left: '70px', zIndex: '1', cursor: 'pointer' }} onClick={() => {
                 if (updateColor === 'red') {
-                    return 
+                    return
                 }
 
                 setUpdateColor('red')
@@ -23,8 +23,10 @@ function Auctions() {
                 setUpdateColor('green')
 
             }}>
-            <UpdateIcon />
+                <UpdateIcon />
             </div>
+
+
 
             <ul className='auctions'>
                 {lots.map((value, key) => {
@@ -38,8 +40,8 @@ function Auctions() {
                                     {value.current_bid}
                                     <div className="tooltip"><p>{value.are_u_winner ? "your bid is winning" : "your bid is loosing"}</p></div>
                                 </div>
+                                <button>Make a bid</button>
                             </div>
-                            <button>Make bid</button>
                         </li>
                     )
                 })}
