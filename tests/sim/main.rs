@@ -2,7 +2,6 @@
 use auction::Bid;
 #[allow(unused_imports)]
 use near_sdk::collections::UnorderedMap;
-use near_sdk::collections::Vector;
 #[allow(unused_imports)]
 use near_sdk::AccountId;
 use near_units::parse_near;
@@ -97,12 +96,12 @@ async fn test_single_participant() {
         .await
         .unwrap();
 
-    let winner_items: Vector<String> = winner
+    let winner_items: Vec<String> = winner
         .call(&worker, contract.id(), "receive_items")
         .transact()
         .await
         .unwrap()
-        .borsh()
+        .json()
         .unwrap();
 
     assert_eq!(
@@ -217,12 +216,12 @@ async fn test_multiple_participants() {
         .await
         .unwrap();
 
-    let winner_items: Vector<String> = winner
+    let winner_items: Vec<String> = winner
         .call(&worker, contract.id(), "receive_items")
         .transact()
         .await
         .unwrap()
-        .borsh()
+        .json()
         .unwrap();
 
     assert_eq!(
@@ -348,12 +347,12 @@ async fn two_two_auctions_in_sequence() {
         .await
         .unwrap();
 
-    let winner_items: Vector<String> = winner
+    let winner_items: Vec<String> = winner
         .call(&worker, contract.id(), "receive_items")
         .transact()
         .await
         .unwrap()
-        .borsh()
+        .json()
         .unwrap();
 
     assert_eq!(
@@ -418,12 +417,12 @@ async fn two_two_auctions_in_sequence() {
         .await
         .unwrap();
 
-    let winner_items: Vector<String> = winner
+    let winner_items: Vec<String> = winner
         .call(&worker, contract.id(), "receive_items")
         .transact()
         .await
         .unwrap()
-        .borsh()
+        .json()
         .unwrap();
 
     assert_eq!(
@@ -594,12 +593,12 @@ async fn test_auction_with_two_items() {
         .await
         .unwrap();
 
-    let winner_items: Vector<String> = winner
+    let winner_items: Vec<String> = winner
         .call(&worker, contract.id(), "receive_items")
         .transact()
         .await
         .unwrap()
-        .borsh()
+        .json()
         .unwrap();
 
     assert_eq!(
