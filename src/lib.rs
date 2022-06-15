@@ -6,6 +6,7 @@ use std::collections::HashMap;
 use helper::Helper;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::collections::{UnorderedMap, Vector};
+use near_sdk::serde::Serialize;
 use near_sdk::{env, PanicOnDefault};
 use near_sdk::{near_bindgen, AccountId, Promise};
 
@@ -70,11 +71,46 @@ impl Auction {
     }
 
     /// return all items that caller won
-    #[result_serializer(borsh)]
-    pub fn get_items(&mut self) -> Vector<String> {
-        self.winners_items
-            .get(&env::predecessor_account_id())
-            .unwrap_or(Vector::new(self.helper.generate_collection_id()))
+    pub fn get_items(&self) -> Vec<String> {
+        let items = self.winners_items.get(&env::predecessor_account_id());
+
+        match items {
+            Some(itms) => itms.to_vec(),
+            None => Vec::<String>::new(),
+        }
+    }
+
+    /// return all available lots
+    pub fn get_lots(&self) -> String {
+        #[derive(Serialize)]
+        struct Lot {
+            item_hash: ItemHash,
+            item: Item,
+            supplier: AccountId,
+            winner: AccountId,
+            current_bid: u128,
+        }
+
+        let mut lots = Vec::<Lot>::new();
+
+        for (_, supplier) in self.suppliers.iter() {
+            for (item_hash, item) in supplier.items.iter() {
+                let winner_bid = self
+                    .items_and_bids
+                    .get(&item_hash)
+                    .unwrap_or_else(|| Bid::new(&AccountId::new_unchecked("0".to_string()), &0));
+
+                lots.push(Lot {
+                    item: item.itself,
+                    supplier: supplier.id.clone(),
+                    current_bid: winner_bid.bid,
+                    item_hash,
+                    winner: winner_bid.account_id,
+                })
+            }
+        }
+
+        serde_json::to_string(&lots).unwrap()
     }
 
     /// clear all data except won items after an auction has been finished
@@ -248,7 +284,6 @@ impl Auction {
         for mut supplier in self.suppliers.iter() {
             match supplier.1.sell_item(&item) {
                 Some(sold_item) => {
-
                     /* #region add won item to a winner */
                     match self.winners_items.get(&winner) {
                         Some(mut items) => {
@@ -265,7 +300,6 @@ impl Auction {
                         }
                     }
                     /* #endregion add won item to a winner */
-
 
                     // send money to a supplier for the sold item
                     Promise::new(supplier.0.clone()).transfer(

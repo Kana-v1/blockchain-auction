@@ -198,6 +198,7 @@ dependencies = [
  "futures",
  "near-sdk",
  "near-units",
+ "serde",
  "serde_json",
  "sha2 0.10.2",
  "tokio",

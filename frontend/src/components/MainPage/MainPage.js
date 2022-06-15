@@ -6,8 +6,6 @@ import Accounts from '../Accounts/Accounts'
 import './MainPage.css'
 
 
-
-
 function MainPage() {
     const [clicked, setClicked] = React.useState(new Set())
 

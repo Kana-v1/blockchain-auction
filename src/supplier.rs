@@ -1,6 +1,6 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::Balance;
-use near_sdk::{collections::LookupMap, env, near_bindgen, AccountId};
+use near_sdk::{collections::UnorderedMap, env, near_bindgen, AccountId};
 use sha2::{Digest, Sha256};
 
 use crate::helper::Helper;
@@ -32,20 +32,20 @@ impl Item {
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Supplier {
-    id: AccountId,
-    items: LookupMap<ItemHash, Item>,
+    pub id: AccountId,
+    pub items: UnorderedMap<ItemHash, Item>,
 }
 
 impl Supplier {
     pub fn new(helper: &mut Helper) -> Self {
         Self {
             id: env::predecessor_account_id(),
-            items: LookupMap::new(helper.generate_collection_id()),
+            items: UnorderedMap::new(helper.generate_collection_id()),
         }
     }
 
     /// add item to an supplier's internal list
-    /// 
+    ///
     /// # Arguments
     ///
     /// * `item` - represent of an item in a string format
@@ -62,30 +62,30 @@ impl Supplier {
     }
 
     /// remove item from the supplier's internal list
-    /// 
+    ///
     /// # Arguments
     /// * `item_hash` - hash calculated from an item through the SHA256 algorithm
     pub fn sell_item(&mut self, item_hash: &ItemHash) -> Option<Item> {
         self.items.remove(&item_hash)
     }
 
-    /// check if selled has added item with such hash to an auction 
-    /// 
+    /// check if selled has added item with such hash to an auction
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `item_hash` - hash calculated from an item through the SHA256 algorithm
     pub fn contains_item(&self, item_hash: &String) -> bool {
-        self.items.contains_key(&item_hash)
+        self.items.get(&item_hash).is_some()
     }
 
     /// return item that has been added to an auction
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `item_hash` - hash calculated from an item through the SHA256 algorithm
-    /// 
+    ///
     ///  # Panics
-    /// 
+    ///
     ///  * Supplier has not added item with such hash
     pub fn get_item(&self, item_hash: &ItemHash) -> String {
         match self.items.get(&item_hash) {
@@ -95,7 +95,7 @@ impl Supplier {
     }
 
     /// check if deposit is bigger than item's min bid
-    /// 
+    ///
     ///  # Arguments
     /// * `item_hash` - hash calculated from an item through the SHA256 algorithm
     /// * `deposit` - attached deposit in yocto tokens

@@ -2,7 +2,7 @@ import React from 'react'
 import './Accounts.css'
 import { login, getAccountId, logout } from '../../contract/utils'
 
-function newActiveAccount(accounts) {
+function signIn(accounts) {
     let IDs = Array.from(accounts.keys())
     accounts = new Map()
 
@@ -40,7 +40,7 @@ function Accounts() {
                 {accounts.map((value, key) => {
                     return (
                         <li key={key} className='accRow' onClick={() => {
-                            newActiveAccount(accs)
+                            signIn(accs)
                         }}>
                             {value}
                             {accs.get(value) === true ? <div className="activeAccSign"></div> : ''}
@@ -49,7 +49,7 @@ function Accounts() {
                 })}
 
                 <button className="newAcc" onClick={() => {
-                    newActiveAccount(accs)
+                    signIn(accs)
                 }}>Add new account</button>
             </ul>
         </div>)

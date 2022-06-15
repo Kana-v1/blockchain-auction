@@ -1,38 +1,33 @@
 import React from 'react'
 import './Auctions.css'
+import UpdateIcon from '@mui/icons-material/Update';
+import {getLots} from '../../contract/utils'
 
-function Auctions({ children }) {
-    const auctions = [
-        {
-            is_owner: true,
-            item: "some_item",
-            current_bid: 1,
-            are_u_winner: false,
-        },
-        {
-            is_owner: false,
-            item: "some_item_1",
-            current_bid: 1,
-            are_u_winner: true,
-        },
-        {
-            is_owner: false,
-            item: "another_item",
-            current_bid: 2,
-            are_u_winner: false,
-        },
-        {
-            is_owner: false,
-            item: "another_item",
-            current_bid: 2,
-            are_u_winner: false,
-        },
-    ]
+
+
+function Auctions() {
+    let [lots, setLots] = React.useState([])
+    let [updateColor, setUpdateColor] = React.useState('green')
+
+    getLots().then(lots => setLots(lots))
 
     return (
         <div style={{ width: '100%', height: '100%' }}>
+                        <div style= {{color: updateColor, position: 'absolute', left: '70px', zIndex: '1', cursor: 'pointer'}} onClick = {() => {
+                if (updateColor === 'red') {
+                    return 
+                }
+
+                setUpdateColor('red')
+                getLots().then(lots => setLots(lots))
+                setUpdateColor('green')
+
+            }}>
+            <UpdateIcon />
+            </div>
+
             <ul className='auctions'>
-                {auctions.map((value, key) => {
+                {lots.map((value, key) => {
                     return (
                         <li key={key}>
                             <div className="itemEl">{value.item}</div>
