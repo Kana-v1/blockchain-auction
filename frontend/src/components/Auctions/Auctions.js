@@ -1,15 +1,18 @@
 import React from 'react'
 import './Auctions.css'
 import UpdateIcon from '@mui/icons-material/Update';
-import { getLots } from '../../contract/utils'
-
-
+import { getLots, makeBid } from '../../contract/utils'
+import * as nearAPI from "near-api-js";
+const { utils } = nearAPI;
 
 function Auctions() {
     let [lots, setLots] = React.useState([])
     let [updateColor, setUpdateColor] = React.useState('green')
+    let [buttonIsAble, setButtonAble] = React.useState(true)
 
-    getLots().then(lots => setLots(lots))
+    React.useEffect(() => {
+        getLots().then(result => setLots(result))
+    }, [])
 
     return (
         <div style={{ width: '100%', height: '100%' }}>
@@ -21,7 +24,6 @@ function Auctions() {
                 setUpdateColor('red')
                 getLots().then(lots => setLots(lots))
                 setUpdateColor('green')
-
             }}>
                 <UpdateIcon />
             </div>
@@ -37,16 +39,29 @@ function Auctions() {
                             <div className="itemEl">
                                 <div className="con-tooltip right winnerHelper" style={{ borderColor: value.are_u_winner ? "green" : "red" }}
                                 >
-                                    {value.current_bid}
+                                    {utils.format.formatNearAmount(value.current_bid)}
                                     <div className="tooltip"><p>{value.are_u_winner ? "your bid is winning" : "your bid is loosing"}</p></div>
                                 </div>
-                                <button>Make a bid</button>
+                                <button onClick={() => {
+                                    setButtonAble(false)
+
+                                    let attachedDeposit = prompt("Please enter amount of the tokens you want to bid", "1")
+                                    if (attachedDeposit === null || attachedDeposit === "" || attachedDeposit === undefined) {
+                                        attachedDeposit = "1"
+                                    }
+
+
+                                    makeBid(value.item_hash, utils.format.parseNearAmount(attachedDeposit))
+                                    getLots().then(lots => setLots(lots))
+
+                                    setButtonAble(true)
+                                }} disabled={!buttonIsAble} style={{ backgroundColor: buttonIsAble ? '#24245c' : 'grey', cursor: buttonIsAble ? 'pointer' : '' }}>Make a bid</button>
                             </div>
                         </li>
                     )
                 })}
             </ul>
-        </div>
+        </div >
     )
 }
 

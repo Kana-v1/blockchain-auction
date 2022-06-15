@@ -1,5 +1,6 @@
-import { connect, Contract, WalletConnection, keyStores } from 'near-api-js'
+import { connect, Contract, WalletConnection, keyStores, DEFAULT_FUNCTION_CALL_GAS } from 'near-api-js'
 import getConfig from './config'
+
 
 const nearConfig = getConfig()
 
@@ -48,9 +49,9 @@ export async function getLots() {
             suitableLots.push({
                 is_owner: true,
                 item: lot.item,
-                current_bid: lot.current_bid,
-                are_u_winner: getAccountId() === lots.winner,
-                are_u_supplier: getAccountId() === lots.supplier,
+                current_bid: lot.current_bid.toLocaleString('fullwide', {useGrouping:false}),
+                are_u_winner: getAccountId() === lot.winner,
+                are_u_supplier: getAccountId() === lot.supplier,
                 item_hash: lot.item_hash 
             })
         })
@@ -59,6 +60,7 @@ export async function getLots() {
 
     }
     catch (err) {
+        console.log("ERROR: ")
         errorHandler(err)
     }
 }
@@ -71,8 +73,8 @@ export async function produceAuction() {
     await window.contract.produce_auction({ args: {} }).catch(err => errorHandler(err))
 }
 
-export async function makeBid(itemHash) {
-    await window.contract.make_bid({ args: { item_hash: itemHash } }).catch(err => errorHandler(err))
+export async function makeBid(itemHash, attachedDeposit) {
+    await window.contract.make_bid({ item_hash: itemHash }, DEFAULT_FUNCTION_CALL_GAS, attachedDeposit).catch(err => errorHandler(err))
 }
 
 export async function startNewAuction() {
