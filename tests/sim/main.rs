@@ -98,7 +98,7 @@ async fn test_single_participant() {
         .unwrap();
 
     let winner_items: Vector<String> = winner
-        .call(&worker, contract.id(), "get_items")
+        .call(&worker, contract.id(), "receive_items")
         .transact()
         .await
         .unwrap()
@@ -218,7 +218,7 @@ async fn test_multiple_participants() {
         .unwrap();
 
     let winner_items: Vector<String> = winner
-        .call(&worker, contract.id(), "get_items")
+        .call(&worker, contract.id(), "receive_items")
         .transact()
         .await
         .unwrap()
@@ -349,7 +349,7 @@ async fn two_two_auctions_in_sequence() {
         .unwrap();
 
     let winner_items: Vector<String> = winner
-        .call(&worker, contract.id(), "get_items")
+        .call(&worker, contract.id(), "receive_items")
         .transact()
         .await
         .unwrap()
@@ -419,7 +419,7 @@ async fn two_two_auctions_in_sequence() {
         .unwrap();
 
     let winner_items: Vector<String> = winner
-        .call(&worker, contract.id(), "get_items")
+        .call(&worker, contract.id(), "receive_items")
         .transact()
         .await
         .unwrap()
@@ -595,7 +595,7 @@ async fn test_auction_with_two_items() {
         .unwrap();
 
     let winner_items: Vector<String> = winner
-        .call(&worker, contract.id(), "get_items")
+        .call(&worker, contract.id(), "receive_items")
         .transact()
         .await
         .unwrap()

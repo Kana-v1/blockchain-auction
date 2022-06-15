@@ -71,7 +71,7 @@ impl Auction {
     }
 
     /// return all items that caller won
-    pub fn get_items(&self) -> Vec<String> {
+    pub fn receive_items(&self) -> Vec<String> {
         let items = self.winners_items.get(&env::predecessor_account_id());
 
         match items {
@@ -371,7 +371,7 @@ mod tests {
 
         exchange.winners_items.insert(&get_acc_id(), &items);
 
-        assert_eq!(exchange.get_items().len(), 1, "invalid amount of items")
+        assert_eq!(exchange.receive_items().len(), 1, "invalid amount of items")
     }
 
     #[test]

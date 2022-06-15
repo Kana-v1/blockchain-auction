@@ -32,6 +32,10 @@ function Auctions() {
 
             <ul className='auctions'>
                 {lots.map((value, key) => {
+                    if (value.are_u_supplier) {
+                        return null
+                    }
+
                     return (
                         <li key={key}>
                             <div className="itemEl">{value.item}</div>
