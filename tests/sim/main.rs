@@ -96,8 +96,13 @@ async fn test_single_participant() {
         .await
         .unwrap();
 
+    let get_items_args: Value =
+        from_str(&format!("{{\"account_id\":\"{}.test.near\"}}", WINNER_ACC_ID).as_str()).unwrap();
+
     let winner_items: Vec<String> = winner
-        .call(&worker, contract.id(), "receive_items")
+        .call(&worker, contract.id(), "get_items")
+        .args_json(get_items_args)
+        .unwrap()
         .transact()
         .await
         .unwrap()
@@ -216,8 +221,13 @@ async fn test_multiple_participants() {
         .await
         .unwrap();
 
+    let get_items_args: Value =
+        from_str(&format!("{{\"account_id\":\"{}.test.near\"}}", WINNER_ACC_ID).as_str()).unwrap();
+
     let winner_items: Vec<String> = winner
-        .call(&worker, contract.id(), "receive_items")
+        .call(&worker, contract.id(), "get_items")
+        .args_json(get_items_args)
+        .unwrap()
         .transact()
         .await
         .unwrap()
@@ -347,8 +357,13 @@ async fn two_two_auctions_in_sequence() {
         .await
         .unwrap();
 
+    let get_items_args: Value =
+        from_str(&format!("{{\"account_id\":\"{}.test.near\"}}", WINNER_ACC_ID).as_str()).unwrap();
+
     let winner_items: Vec<String> = winner
-        .call(&worker, contract.id(), "receive_items")
+        .call(&worker, contract.id(), "get_items")
+        .args_json(get_items_args)
+        .unwrap()
         .transact()
         .await
         .unwrap()
@@ -417,8 +432,13 @@ async fn two_two_auctions_in_sequence() {
         .await
         .unwrap();
 
+    let get_items_args: Value =
+        from_str(&format!("{{\"account_id\":\"{}.test.near\"}}", WINNER_ACC_ID).as_str()).unwrap();
+
     let winner_items: Vec<String> = winner
-        .call(&worker, contract.id(), "receive_items")
+        .call(&worker, contract.id(), "get_items")
+        .args_json(get_items_args)
+        .unwrap()
         .transact()
         .await
         .unwrap()
@@ -593,8 +613,13 @@ async fn test_auction_with_two_items() {
         .await
         .unwrap();
 
+    let get_items_args: Value =
+        from_str(&format!("{{\"account_id\":\"{}.test.near\"}}", WINNER_ACC_ID).as_str()).unwrap();
+
     let winner_items: Vec<String> = winner
-        .call(&worker, contract.id(), "receive_items")
+        .call(&worker, contract.id(), "get_items")
+        .args_json(get_items_args)
+        .unwrap()
         .transact()
         .await
         .unwrap()
@@ -705,8 +730,6 @@ async fn bid_less_than_min_bid() {
         .await
         .unwrap();
 }
-
-
 
 #[tokio::test]
 #[should_panic]

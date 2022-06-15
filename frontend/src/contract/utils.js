@@ -16,8 +16,8 @@ export async function initContract() {
     window.accountId = window.walletConnection.getAccountId()
 
     window.contract = new Contract(window.walletConnection.account(), nearConfig.contractName, {
-        viewMethods: ['get_lots'],
-        changeMethods: ['add_item_to_auction', 'produce_auction', 'make_bid', 'start_new_auction', 'receive_items']
+        viewMethods: ['get_lots', 'receive_items'],
+        changeMethods: ['add_item_to_auction', 'produce_auction', 'make_bid', 'start_new_auction']
     })
 }
 
@@ -30,7 +30,7 @@ export function login() {
 }
 
 export async function getItems() {
-    return await window.contract.receive_items().catch(err => errorHandler(err))
+    return await window.contract.receive_items({ account_id: getAccountId().toString() }).catch(err => errorHandler(err))
 }
 
 export async function getLots() {
@@ -42,10 +42,10 @@ export async function getLots() {
             suitableLots.push({
                 is_owner: true,
                 item: lot.item,
-                current_bid: lot.current_bid.toLocaleString('fullwide', {useGrouping:false}),
+                current_bid: lot.current_bid.toLocaleString('fullwide', { useGrouping: false }),
                 are_u_winner: getAccountId() === lot.winner,
                 are_u_supplier: getAccountId() === lot.supplier,
-                item_hash: lot.item_hash 
+                item_hash: lot.item_hash
             })
         })
 
