@@ -16,7 +16,10 @@ export default function Auctions() {
 
     return (
         <div style={{ width: '100%', height: '100%' }}>
-            <div style={{ color: updateColor, position: 'absolute', right: '52%', zIndex: '1', cursor: 'pointer' }} onClick={() => {
+
+
+            <ul className='auctions'>
+            <div style={{ color: updateColor, position: 'relative', left: '1%', cursor: 'pointer' }} onClick={() => {
                 if (updateColor === 'red') {
                     return
                 }
@@ -27,10 +30,6 @@ export default function Auctions() {
             }}>
                 <UpdateIcon />
             </div>
-
-
-
-            <ul className='auctions'>
                 {lots.map((value, key) => {
                     if (value.are_u_supplier) {
                         return null

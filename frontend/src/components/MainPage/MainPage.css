@@ -17,3 +17,7 @@
 .sides {
     border-image: linear-gradient(to right, rgb(25, 211, 149), rgb(240, 237, 103)) 0 0 0 1;
 }
+
+.technicalWrapper {
+    position: relative;
+}

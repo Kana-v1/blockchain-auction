@@ -18,7 +18,7 @@ export const SidebarData = [
         icon: <DataArrayIcon />,
     },
     {
-        title: 'AdminPanel',
+        title: 'Admin panel',
         icon: <AdminPanelSettingsIcon />,
     }
 ]
