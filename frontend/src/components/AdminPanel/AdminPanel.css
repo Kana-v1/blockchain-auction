@@ -57,6 +57,12 @@
     padding: 8px 12px;
 }
 
+.auctionActions .btnDisabled,
+.adminPanel .btnDisabled {
+    background-color: grey;
+    cursor: default;
+}
+
 .adminPanel .auctionActions {
     margin-bottom: 20px;
     display: flex;
@@ -210,3 +216,4 @@ input:focus~.highlight {
         background: transparent;
     }
 }
+

@@ -25,7 +25,7 @@ function MainPage() {
                 </div>
             </div>
             <div style={clicked.has('AdminPanel') ? { visibility: 'visible' } : { visibility: 'hidden' }}>
-                <AdminPanel />
+                <AdminPanel/>
             </div>
         </div>
     )

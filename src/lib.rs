@@ -72,7 +72,9 @@ impl Auction {
 
     /// return all items that caller won
     pub fn get_items(&self, account_id: String) -> Vec<String> {
-        let items = self.winners_items.get(&AccountId::new_unchecked(account_id));
+        let items = self
+            .winners_items
+            .get(&AccountId::new_unchecked(account_id));
 
         match items {
             Some(itms) => itms.to_vec(),
@@ -95,10 +97,9 @@ impl Auction {
 
         for (_, supplier) in self.suppliers.iter() {
             for (item_hash, item) in supplier.items.iter() {
-                let winner_bid = self
-                    .items_and_bids
-                    .get(&item_hash)
-                    .unwrap_or_else(|| Bid::new(&AccountId::new_unchecked("0".to_string()), &0));
+                let winner_bid = self.items_and_bids.get(&item_hash).unwrap_or_else(|| {
+                    Bid::new(&AccountId::new_unchecked("0".to_string()), &item.min_bid)
+                });
 
                 lots.push(Lot {
                     item: item.itself,
@@ -261,18 +262,24 @@ impl Auction {
     ///
     /// # Panics
     ///  * auction must be opened
-    pub fn add_item_to_auction(&mut self, item: &Item, min_bid: &u128) {
+    pub fn add_item_to_auction(&mut self, item: &Item, min_bid: &String) {
+        let converted_min_bid = min_bid.parse::<u128>().unwrap();
+
         assert!(self.auction_is_open, "Auction is closed. Try again later");
 
         match self.suppliers.get(&env::predecessor_account_id()) {
-            Some(mut supplier) => supplier.add_item_to_auction(&item, min_bid),
+            Some(mut supplier) => supplier.add_item_to_auction(&item, &converted_min_bid),
             None => {
                 let mut supplier = Supplier::new(&mut self.helper);
-                supplier.add_item_to_auction(&item, min_bid);
+                supplier.add_item_to_auction(&item, &converted_min_bid);
                 self.suppliers
                     .insert(&env::predecessor_account_id(), &supplier);
             }
         }
+    }
+
+    pub fn get_auction_state(&self) -> bool {
+        self.auction_is_open
     }
 
     /// produce exchange. send money to a supplier and item to a buyer
@@ -340,7 +347,7 @@ impl Auction {
 
     // FOR TEST PURPOSES
     pub fn add_test_item(&mut self) {
-        self.add_item_to_auction(&String::from("test_item"), &0)
+        self.add_item_to_auction(&String::from("test_item"), &"0".to_string())
     }
 }
 
@@ -371,7 +378,11 @@ mod tests {
 
         exchange.winners_items.insert(&get_acc_id(), &items);
 
-        assert_eq!(exchange.get_items(get_acc_id().to_string()).len(), 1, "invalid amount of items")
+        assert_eq!(
+            exchange.get_items(get_acc_id().to_string()).len(),
+            1,
+            "invalid amount of items"
+        )
     }
 
     #[test]
@@ -415,7 +426,7 @@ mod tests {
     #[should_panic]
     fn test_add_tem_to_closed_auction() {
         let mut exchange = Auction::new();
-        exchange.add_item_to_auction(&"test_item".to_string(), &10u128);
+        exchange.add_item_to_auction(&"test_item".to_string(), &"10".to_string());
     }
 
     #[test]
@@ -423,7 +434,7 @@ mod tests {
         let mut exchange = Auction::new();
         exchange.start_new_auction();
 
-        exchange.add_item_to_auction(&"test_item".to_string(), &10u128);
+        exchange.add_item_to_auction(&"test_item".to_string(), &"10".to_string());
 
         assert_eq!(
             exchange.suppliers.len(),
@@ -440,7 +451,7 @@ mod tests {
 
         let (_, item_hash) = supplier::Item::new(&"test_item".to_string(), &12u128);
 
-        exchange.add_item_to_auction(&"test_item".to_string(), &10u128);
+        exchange.add_item_to_auction(&"test_item".to_string(), &"10".to_string());
 
         assert_eq!(
             exchange.does_supplier_make_bid_for_his_item(&item_hash),

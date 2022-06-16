@@ -12,7 +12,7 @@ pub const DEFAULT_MIN_BID: u128 = 1;
 #[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Item {
-    min_bid: u128,
+    pub min_bid: u128,
     pub itself: String,
 }
 

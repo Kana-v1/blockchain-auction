@@ -60,7 +60,7 @@ async fn test_single_participant() {
         r#"
     {
         "item":"test_item",
-        "min_bid": 0
+        "min_bid": "0"
     }"#,
     )
     .unwrap();
@@ -176,7 +176,7 @@ async fn test_multiple_participants() {
         r#"
     {
         "item":"test_item",
-        "min_bid": 0
+        "min_bid": "0"
     }"#,
     )
     .unwrap();
@@ -311,7 +311,7 @@ async fn two_two_auctions_in_sequence() {
         r#"
     {
         "item":"test_item",
-        "min_bid": 0
+        "min_bid": "0"
     }"#,
     )
     .unwrap();
@@ -525,7 +525,7 @@ async fn test_auction_with_two_items() {
         r#"
         {
             "item":"test_item",
-            "min_bid": 0
+            "min_bid": "0"
         }"#,
     )
     .unwrap();
@@ -542,7 +542,7 @@ async fn test_auction_with_two_items() {
         r#"
                 {
                     "item":"another_test_item",
-                "min_bid": 0
+                "min_bid": "0"
             }"#,
     )
     .unwrap();
@@ -700,7 +700,7 @@ async fn bid_less_than_min_bid() {
         r#"
     {
         "item":"test_item",
-        "min_bid": 2
+        "min_bid": "2"
     }"#,
     )
     .unwrap();

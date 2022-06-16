@@ -5,7 +5,7 @@ import { getLots, makeBid } from '../../contract/utils'
 import * as nearAPI from "near-api-js";
 const { utils } = nearAPI;
 
-function Auctions() {
+export default function Auctions() {
     let [lots, setLots] = React.useState([])
     let [updateColor, setUpdateColor] = React.useState('green')
     let [buttonIsAble, setButtonAble] = React.useState(true)
@@ -16,7 +16,7 @@ function Auctions() {
 
     return (
         <div style={{ width: '100%', height: '100%' }}>
-            <div style={{ color: updateColor, position: 'absolute', left: '70px', zIndex: '1', cursor: 'pointer' }} onClick={() => {
+            <div style={{ color: updateColor, position: 'absolute', right: '52%', zIndex: '1', cursor: 'pointer' }} onClick={() => {
                 if (updateColor === 'red') {
                     return
                 }
@@ -68,5 +68,3 @@ function Auctions() {
         </div >
     )
 }
-
-export default Auctions
