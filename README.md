@@ -10,5 +10,7 @@ cargo test
 
 # Run locally
 cd frontend
+
 npm i
+
 npm start
