@@ -6,11 +6,11 @@ src -> contract code by itself
 frontend -> frontend
 
 # Tests
-cargo test
+`cargo test`
 
 # Run locally
-cd frontend
+`cd frontend
 
 npm i
 
-npm start
+npm start`
