@@ -3,6 +3,7 @@ The core idea is just a traditinal auction where sellers can sell items and buye
 
 # File structure
 src -> contract code by itself
+
 frontend -> frontend
 
 # Tests
