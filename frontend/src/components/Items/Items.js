@@ -11,7 +11,10 @@ function Items() {
 
     React.useEffect(() => {
         getItems().then(result => {
-            setItems(result)
+            if (result !== undefined && result !== null) {
+                setItems(result)
+            }
+            
             setUpdateColor('green')
         })
     }, [])

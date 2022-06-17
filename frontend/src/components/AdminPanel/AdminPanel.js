@@ -14,6 +14,10 @@ export default function AdminPanel() {
     const [item, setItem] = React.useState('')
     const [itemMinBid, setItemMinBid] = React.useState('')
 
+    const [addItemBtnDisabled, setAddItemBtnState] = React.useState(false)
+    const [createNewAucBrnDisabled, setNewAucBtnState] = React.useState(false)
+    const [produceAucBtnDisabled, setProduceAucBtnState] = React.useState(false)
+
     React.useEffect(() => {
         const interval = setInterval(() => {
             updateAuctionState(changeAuctionState)
@@ -51,25 +55,38 @@ export default function AdminPanel() {
                         <label>Minimal bid (N) &gt;=1</label>
                     </div>
                 </div>
-                <button disabled={!auctionCreated} className={auctionCreated ? 'newItemBtn' : 'newItemBtn btnDisabled'} onClick={() => {
+                <button disabled={!auctionCreated || addItemBtnDisabled} className={auctionCreated && !addItemBtnDisabled ? 'newItemBtn' : 'newItemBtn btnDisabled'} onClick={() => {
                     if (item === '' || itemMinBid === '' || itemMinBid < 1) {
                         return
                     }
+
+                    setAddItemBtnState(true)
 
                     addItemToAuction(item, utils.format.parseNearAmount(itemMinBid.toString()))
                         .then(() => {
                             setItemMinBid('');
                             setItem('')
+                            setAddItemBtnState(false)
                         })
-                }}>Add Item</button>
+                }}>{addItemBtnDisabled ? '...' : 'Add new item'}</button>
             </div>
             <div className='auctionActions'>
-                <button disabled={auctionCreated} className={auctionCreated ? 'btnDisabled' : ''} onClick={() => {
-                    startNewAuction().then(() => updateAuctionState(changeAuctionState))
-                }}>Create new auction</button>
-                <button disabled={!auctionCreated} className={auctionCreated ? '' : 'btnDisabled'} onClick={() => {
-                    produceAuction().then(() => updateAuctionState(changeAuctionState))
-                }}>Produce the auction</button>
+                <button disabled={auctionCreated} className={auctionCreated || createNewAucBrnDisabled ? 'btnDisabled' : ''} onClick={() => {
+                    setNewAucBtnState(true)
+                    
+                    startNewAuction().then(() => {
+                        updateAuctionState(changeAuctionState)
+                        setNewAucBtnState(false)
+                    })
+                }}>{createNewAucBrnDisabled ? '...' : 'Create new auction'}</button>
+                <button disabled={!auctionCreated} className={auctionCreated && !produceAucBtnDisabled ? '' : 'btnDisabled'} onClick={() => {
+                    setProduceAucBtnState(true)
+
+                    produceAuction().then(() => {
+                        updateAuctionState(changeAuctionState)
+                        setProduceAucBtnState(false)
+                    })
+                }}>{produceAucBtnDisabled ? '...' : 'Produce an auction'}</button>
             </div>
         </div>
     )

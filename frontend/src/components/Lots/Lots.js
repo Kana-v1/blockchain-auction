@@ -1,5 +1,5 @@
 import React from 'react'
-import './Auctions.css'
+import './Lots.css'
 import UpdateIcon from '@mui/icons-material/Update';
 import { getLots, makeBid } from '../../contract/utils'
 import * as nearAPI from "near-api-js";

@@ -34,7 +34,7 @@
 .adminPanel button {
     box-sizing: border-box;
     text-align: center;
-    width: 100%;
+    min-width: 40%;
     height: 35px;
     background: #41596e;
     border-radius: 999px;

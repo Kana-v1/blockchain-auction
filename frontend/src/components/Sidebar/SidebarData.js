@@ -6,11 +6,11 @@ import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 
 export const SidebarData = [
     {
-        title: 'Accounts',
+        title: 'Account',
         icon: <AccountCircleIcon />,
     },
     {
-        title: 'Auctions',
+        title: 'Lots',
         icon: <SellIcon />,
     },
     {

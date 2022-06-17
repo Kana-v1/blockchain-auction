@@ -40,6 +40,10 @@ export async function isAuctionOpen() {
 
 export async function getLots() {
     let lots = await window.contract.get_lots({ args: {} }).catch(err => errorHandler(err))
+    if (lots === null || lots === undefined || lots === '') {
+        return
+    }
+
     try {
         lots = JSON.parse(lots)
         let suitableLots = []
@@ -58,12 +62,12 @@ export async function getLots() {
 
     }
     catch (err) {
-        console.log("ERROR: ")
         errorHandler(err)
     }
 }
 
 export async function addItemToAuction(item, minBid) {
+    console.log('addin')
     await window.contract.add_item_to_auction({ args: { item: item, min_bid: minBid } }).catch(err => errorHandler(err))
 }
 
