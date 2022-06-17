@@ -152,3 +152,9 @@ li button:active {
     left: -12%;
     transform: rotate(90deg);
 }
+
+.auctions .text {
+    margin-left: 20px;
+    font-family: 'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+    font-size: large;
+}

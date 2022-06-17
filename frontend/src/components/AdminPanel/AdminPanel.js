@@ -6,7 +6,9 @@ const { utils } = nearAPI;
 
 
 function updateAuctionState(changeAuctionState) {
-    isAuctionOpen().then(isAuctionOpen => changeAuctionState(isAuctionOpen))
+    isAuctionOpen().then(isAuctionOpen => {
+        changeAuctionState(isAuctionOpen)
+    })
 }
 
 export default function AdminPanel() {
@@ -14,17 +16,23 @@ export default function AdminPanel() {
     const [item, setItem] = React.useState('')
     const [itemMinBid, setItemMinBid] = React.useState('')
 
-    const [addItemBtnDisabled, setAddItemBtnState] = React.useState(false)
-    const [createNewAucBrnDisabled, setNewAucBtnState] = React.useState(false)
-    const [produceAucBtnDisabled, setProduceAucBtnState] = React.useState(false)
+    const [addItemBtnDisabled, setAddItemBtnState] = React.useState(true)
+    const [createNewAucBrnDisabled, setNewAucBtnState] = React.useState(true)
+    const [produceAucBtnDisabled, setProduceAucBtnState] = React.useState(true)
 
     React.useEffect(() => {
+        isAuctionOpen().then(isAuctionOpen => {
+            changeAuctionState(isAuctionOpen)
+            setAddItemBtnState(false)
+            setNewAucBtnState(false)
+            setProduceAucBtnState(false)
+        })
+
         const interval = setInterval(() => {
             updateAuctionState(changeAuctionState)
         }, 5000)
-
         return () => clearInterval(interval)
-    })
+    }, [])
 
     return (
         <div className="adminPanel">
@@ -49,7 +57,8 @@ export default function AdminPanel() {
                                 } else {
                                     setItemMinBid('')
                                 }
-                            }} />
+                            }}
+                        />
                         <span className="highlight"></span>
                         <span className="bar"></span>
                         <label>Minimal bid (N) &gt;=1</label>
@@ -73,7 +82,7 @@ export default function AdminPanel() {
             <div className='auctionActions'>
                 <button disabled={auctionCreated} className={auctionCreated || createNewAucBrnDisabled ? 'btnDisabled' : ''} onClick={() => {
                     setNewAucBtnState(true)
-                    
+
                     startNewAuction().then(() => {
                         updateAuctionState(changeAuctionState)
                         setNewAucBtnState(false)

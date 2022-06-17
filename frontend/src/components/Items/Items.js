@@ -35,6 +35,7 @@ function Items() {
             }}>
                 <UpdateIcon />
             </div>
+            {items.length === 0 ? 'You have not won any items yet' : ''}
             <ul className="tilesWrap">
                 {items.map((value, key) => {
                     return (

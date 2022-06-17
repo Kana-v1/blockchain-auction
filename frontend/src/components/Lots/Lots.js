@@ -19,17 +19,21 @@ export default function Auctions() {
 
 
             <ul className='auctions'>
-            <div style={{ color: updateColor, position: 'relative', left: '1%', cursor: 'pointer' }} onClick={() => {
-                if (updateColor === 'red') {
-                    return
-                }
+                <div style={{ color: updateColor, position: 'relative', left: '1%', cursor: 'pointer' }} onClick={() => {
+                    if (updateColor === 'red') {
+                        return
+                    }
 
-                setUpdateColor('red')
-                getLots().then(lots => setLots(lots))
-                setUpdateColor('green')
-            }}>
-                <UpdateIcon />
-            </div>
+                    setUpdateColor('red')
+                    getLots().then(lots => setLots(lots))
+                    setUpdateColor('green')
+                }}>
+                    <UpdateIcon />
+                </div>
+                <div className  = "text">
+                    {lots.length === 0 ? 'There are no active lots now' : ''}
+                </div>
+
                 {lots.map((value, key) => {
                     if (value.are_u_supplier) {
                         return null
