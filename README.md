@@ -1,2 +1,18 @@
 # Description
-Some users want to sell something via an auction. Others want to buy something via an auction. This dapp is an exchange between those users
+The core idea is just a traditinal auction where sellers can sell items and buyers can make bids and win items
+
+# File structure
+src -> contract code by itself
+
+frontend -> frontend
+
+# Tests
+```
+cargo test
+```
+# Run locally
+```
+cd frontend
+npm i
+npm start
+```
