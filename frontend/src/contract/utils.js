@@ -30,16 +30,16 @@ export function login() {
 }
 
 export async function getItems() {
-    return await window.contract.get_items({ account_id: getAccountId().toString() }).catch(err => errorHandler(err))
+    return await window.contract.get_items({ account_id: getAccountId().toString() }).catch(errorHandler)
 }
 
 
 export async function isAuctionOpen() {
-    return await window.contract.get_auction_state({}).catch(err => errorHandler(err))
+    return await window.contract.get_auction_state({}).catch(errorHandler)
 }
 
 export async function getLots() {
-    let lots = await window.contract.get_lots({ args: {} }).catch(err => errorHandler(err))
+    let lots = await window.contract.get_lots({ args: {} }).catch(errorHandler)
     if (lots === null || lots === undefined || lots === '') {
         return
     }
@@ -67,20 +67,19 @@ export async function getLots() {
 }
 
 export async function addItemToAuction(item, minBid) {
-    console.log('addin')
-    await window.contract.add_item_to_auction({ args: { item: item, min_bid: minBid } }).catch(err => errorHandler(err))
+    await window.contract.add_item_to_auction({ args: { item: item, min_bid: minBid } }).catch(errorHandler)
 }
 
 export async function produceAuction() {
-    await window.contract.produce_auction({ args: {} }).catch(err => errorHandler(err))
+    await window.contract.produce_auction({ args: {} }).catch(errorHandler)
 }
 
 export async function makeBid(itemHash, attachedDeposit) {
-    await window.contract.make_bid({ item_hash: itemHash }, DEFAULT_FUNCTION_CALL_GAS, attachedDeposit).catch(err => errorHandler(err))
+    await window.contract.make_bid({ item_hash: itemHash }, DEFAULT_FUNCTION_CALL_GAS, attachedDeposit).catch(errorHandler)
 }
 
 export async function startNewAuction() {
-    await window.contract.start_new_auction({ args: {} }).catch(err => errorHandler(err))
+    await window.contract.start_new_auction({ args: {} }).catch(errorHandler)
 }
 
 export function getAccountId() {

@@ -1,10 +1,8 @@
 use near_sdk::{
     borsh::{self, BorshDeserialize, BorshSerialize},
-    near_bindgen,
 };
 
 /// Helper that separates non-main contract actions
-#[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Helper {
     next_id_length: u64,
@@ -41,6 +39,7 @@ impl Helper {
     }
 }
 
+#[cfg(test)]
 mod tests {
 
     #[test]

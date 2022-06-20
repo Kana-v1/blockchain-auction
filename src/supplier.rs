@@ -1,6 +1,6 @@
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
 use near_sdk::Balance;
-use near_sdk::{collections::UnorderedMap, env, near_bindgen, AccountId};
+use near_sdk::{collections::UnorderedMap, env, AccountId};
 use sha2::{Digest, Sha256};
 
 use crate::helper::Helper;
@@ -9,7 +9,6 @@ pub type ItemHash = String;
 
 pub const DEFAULT_MIN_BID: u128 = 1;
 
-#[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Item {
     pub min_bid: u128,
@@ -29,7 +28,6 @@ impl Item {
 }
 
 /// Seller that supplies items to an auction
-#[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize)]
 pub struct Supplier {
     pub id: AccountId,
@@ -117,7 +115,7 @@ fn get_hash(item: &String) -> String {
     format!("{:X}", Sha256::digest(item.as_bytes()))
 }
 
-#[allow(unused_imports)]
+#[cfg(test)]
 mod tests {
     use super::*;
 

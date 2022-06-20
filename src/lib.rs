@@ -5,7 +5,7 @@ use std::collections::HashMap;
 
 use helper::Helper;
 use near_sdk::borsh::{self, BorshDeserialize, BorshSerialize};
-use near_sdk::collections::{UnorderedMap, Vector};
+use near_sdk::collections::{LookupMap, UnorderedMap, Vector};
 use near_sdk::serde::Serialize;
 use near_sdk::{env, PanicOnDefault};
 use near_sdk::{near_bindgen, AccountId, Promise};
@@ -17,11 +17,20 @@ type Money = u128;
 type ItemHash = String;
 
 /// Representation of a user's bid that contains information about account id and amount of bid
-#[near_bindgen]
 #[derive(BorshDeserialize, BorshSerialize, Debug, Clone)]
 pub struct Bid {
     pub account_id: AccountId,
     pub bid: Money,
+}
+
+/// Representation of a lot for frontend
+#[derive(Serialize)]
+struct Lot {
+    item_hash: ItemHash,
+    item: Item,
+    supplier: AccountId,
+    winner: AccountId,
+    current_bid: u128,
 }
 
 impl Bid {
@@ -40,7 +49,7 @@ pub struct Auction {
     pub suppliers: UnorderedMap<AccountId, Supplier>, // who want to sell item
     pub items_and_bids: UnorderedMap<ItemHash, Bid>,  // current bid for each item
     pub users_bids: UnorderedMap<AccountId, Money>, // whole sum of all bids for each user (e.g. user wants to buy item_1 and item_2. He bids item_1 = 1 token, item_2 = 1 token. Sum will be 2 tokens)
-    pub winners_items: UnorderedMap<AccountId, Vector<Item>>, // each item winner
+    pub winners_items: LookupMap<AccountId, Vector<Item>>, // each item winner
 
     auction_is_open: bool, // does suppliers can add new items or buyers can add new bids for the current auction
     helper: Helper,
@@ -54,7 +63,7 @@ impl Auction {
             suppliers: UnorderedMap::new(b"suppliers".to_vec()),
             items_and_bids: UnorderedMap::new(b"items_and_bids".to_vec()),
             users_bids: UnorderedMap::new(b"users_bids".to_vec()),
-            winners_items: UnorderedMap::new(b"winners_items".to_vec()),
+            winners_items: LookupMap::new(b"winners_items".to_vec()),
             auction_is_open: false,
             helper: Helper::new(),
         }
@@ -84,15 +93,6 @@ impl Auction {
 
     /// return all available lots
     pub fn get_lots(&self) -> String {
-        #[derive(Serialize)]
-        struct Lot {
-            item_hash: ItemHash,
-            item: Item,
-            supplier: AccountId,
-            winner: AccountId,
-            current_bid: u128,
-        }
-
         let mut lots = Vec::<Lot>::new();
 
         for (_, supplier) in self.suppliers.iter() {
@@ -161,9 +161,7 @@ impl Auction {
             }
         }
 
-        if !item_exists {
-            panic!("item with hash {} does not exist", item_hash);
-        }
+        assert!(!item_exists, "Item with hash {} does not exist", item_hash);
 
         if let Some(exists_bid) = self.items_and_bids.get(&item_hash) {
             assert!(
@@ -346,13 +344,14 @@ impl Auction {
     }
 
     // FOR TEST PURPOSES
+    #[private]
     pub fn add_test_item(&mut self) {
         self.add_item_to_auction(&String::from("test_item"), &"0".to_string())
     }
 }
 
-#[allow(unused_imports)]
-#[allow(dead_code)]
+
+#[cfg(test)]
 mod tests {
     use super::*;
 
@@ -407,7 +406,7 @@ mod tests {
         assert_eq!(exchange.items_and_bids.len(), 0);
         assert_eq!(exchange.users_bids.len(), 0);
 
-        assert_eq!(exchange.winners_items.len(), 1);
+        assert!(exchange.winners_items.contains_key(&get_acc_id()));
     }
 
     #[test]
